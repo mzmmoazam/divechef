@@ -7,3 +7,12 @@
 .superpowers/
 .DS_Store
 **/.DS_Store
+
+# Node / monorepo
+node_modules/
+.turbo/
+dist/
+.next/
+.env
+.env.local
+.vercel

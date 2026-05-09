@@ -1,0 +1,95 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scoreDive > snapshot: deco-breach result 1`] = `
+{
+  "insights": [
+    {
+      "evidence": {
+        "from6mSec": 1820,
+        "rateMpm": 10,
+        "surfaceSec": 1860,
+      },
+      "ruleId": "final_ascent_too_fast",
+      "severity": "warn",
+    },
+    {
+      "evidence": {
+        "palierDurationSec": 20,
+        "requiredSec": 180,
+      },
+      "ruleId": "palier_securite_court",
+      "severity": "info",
+    },
+    {
+      "evidence": {
+        "actualTimeSec": 10,
+        "requiredDepthM": 3,
+        "requiredTimeSec": 180,
+      },
+      "ruleId": "palier_deco_manque",
+      "severity": "alert",
+    },
+    {
+      "evidence": {
+        "maxDepthM": 40,
+      },
+      "ruleId": "plongee_profonde",
+      "severity": "info",
+    },
+  ],
+  "score": 45,
+  "scoringVersion": "v1.0",
+}
+`;
+
+exports[`scoreDive > snapshot: fast-ascent result 1`] = `
+{
+  "insights": [
+    {
+      "evidence": {
+        "endSec": 1210,
+        "maxRateMpm": 25,
+        "startSec": 1200,
+      },
+      "ruleId": "ascent_too_fast",
+      "severity": "warn",
+    },
+    {
+      "evidence": {
+        "endSec": 1210,
+        "maxRateMpm": 25,
+        "startSec": 1200,
+      },
+      "ruleId": "ascent_dangerous",
+      "severity": "alert",
+    },
+    {
+      "evidence": {
+        "from6mSec": 1240,
+        "rateMpm": 25,
+        "surfaceSec": 1260,
+      },
+      "ruleId": "final_ascent_too_fast",
+      "severity": "warn",
+    },
+    {
+      "evidence": {
+        "palierDurationSec": 10,
+        "requiredSec": 180,
+      },
+      "ruleId": "palier_securite_court",
+      "severity": "info",
+    },
+  ],
+  "score": 40,
+  "scoringVersion": "v1.0",
+}
+`;
+
+exports[`scoreDive > snapshot: perfect dive result 1`] = `
+{
+  "insights": [],
+  "score": 100,
+  "scoringVersion": "v1.0",
+}
+`;

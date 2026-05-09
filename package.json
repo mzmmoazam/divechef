@@ -1,0 +1,17 @@
+{
+  "name": "diveforge",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "db:migrate": "pnpm --filter @diveforge/web exec prisma migrate deploy",
+    "db:generate": "pnpm --filter @diveforge/web exec prisma generate"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}
