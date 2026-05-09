@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm --filter @diveforge/shared build && prisma generate && next build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs"
+}
