@@ -130,14 +130,17 @@ model Dive {
 }
 
 model DiveSample {
-  id      BigInt @id @default(autoincrement())
-  diveId  String
-  dive    Dive   @relation(fields: [diveId], references: [id], onDelete: Cascade)
-  tSec    Int
-  depthM  Float
-  tempC   Float?
-  ndlMin  Int?
-  cnsPct  Float?
+  id           BigInt @id @default(autoincrement())
+  diveId       String
+  dive         Dive   @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  tSec         Int       // sample time in seconds since dive start; native interval 10s
+  depthM       Float
+  tempC        Float?
+  cnsPct       Float?
+  decoState    String    // "ndl" | "deco" — from libdc <deco> element text
+  decoTimeSec  Int       // when ndl: NDL seconds remaining; when deco: required stop seconds
+  decoDepthM   Float     // when ndl: 0; when deco: required stop depth (meters)
+  ttsSec       Int?      // total time-to-surface in seconds (libdc <tts>)
   @@index([diveId, tSec])
 }
 
@@ -185,7 +188,7 @@ score = max(0, min(100, score))
 | `final_ascent_too_fast` | warn | -10 | Ascent rate from 6m to surface > 6 m/min | Medium |
 | `palier_securite_manque` | warn | -10 | Max depth > 6m AND no continuous ≥180s segment between 3m and 5m before surfacing | High |
 | `palier_securite_court` | info | -5 | Palier between 3-5m attempted but lasted < 180s (and `palier_securite_manque` did not fire) | High |
-| `palier_deco_manque` | alert | -40 | MN90 says a palier de décompression was required for the depth/time profile but the dive shows no stop at the required depth | Medium — see Known Unknowns |
+| `palier_deco_manque` | alert | -40 | Any sample has `decoState == "deco"` AND in the final 60s of the dive the diver did NOT spend ≥ `decoTimeSec` seconds within ±0.5m of `decoDepthM` before surfacing | **High — confirmed available** via libdc parser; spike validated on a real deco dive |
 | `profondeur_depasse_niveau_leger` | warn | -10 | Max depth exceeds niveau limit by ≤5m (N1: 20m, N2: 20m autonome, N3: 60m, N4/Initiateur/MF1/MF2: no cap, UNKNOWN: rule disabled) | Medium — depends on user-declared niveau |
 | `profondeur_depasse_niveau_grave` | alert | -30 | Max depth exceeds niveau limit by >5m | Medium |
 | `temperature_basse` | info | -3 | `min_water_temp_c` < 10°C AND duration > 30 min | Low (comfort flag) |
@@ -200,10 +203,17 @@ score = max(0, min(100, score))
 - `scoringVersion = "v1.0"`. Bump on any rule change; backfill job re-scores historic dives via `prisma migrate`-adjacent admin script.
 - One rule throwing must not kill the whole scoring pass — engine catches per-rule, logs to Sentry, and continues.
 
-### Known unknowns
+### Resolved unknowns (Plan 0 spike — see [spike/findings.md](../../../spike/findings.md))
 
-1. **Does libdivecomputer expose required-deco-stop info from the Peregrine?** This determines whether `palier_deco_manque` ships in v1 or is deferred. Resolved by week 1 of build.
-2. **Exact FFESSM threshold sources.** All rules need a credentialed reviewer pass before public release. Tracked as a release-gate item.
+1. ✅ **libdc exposes required-deco-stop info via `<deco>` element** with `time` (required stop seconds) and `depth` (required stop meters) attributes. Sample interval is 10 seconds. `palier_deco_manque` is feasible and now scoped concretely.
+2. ✅ **BLE on iOS is viable** via CoreBluetooth + libdivecomputer parser (NOT libdc's BLE transport, which is BlueZ-only). Spike produced byte-identical parsed XML to the SQLite-extracted reference. Service UUID `FE25C237-0ECE-443C-B0AA-E02033E7029D`, single SPP characteristic `27B7570B-359E-45A3-91BB-CF7E70049BD2`.
+3. ✅ **Peregrine wire protocol implemented** in pure Swift — see `spike/0c-ble-protocol/swift-sources/PeregrineProtocol.swift` and `PeregrineClient.swift`. To be wrapped as a TurboModule in Plan 3.
+
+### Outstanding unknowns
+
+1. **Exact FFESSM threshold sources.** All rules still need a credentialed reviewer pass (FFESSM Manuel du Moniteur, Code du Sport articles A322-71 et seq.) before public release. Tracked as a release-gate item.
+2. **Android BLE port not validated.** Same wire protocol assumed to work over Android `BluetoothGatt`; first Android attempt in Plan 3 should re-validate on a real device.
+3. **Other Shearwater models untested.** Petrel/Perdix/Teric/Tern share the protocol per libdc but were not exercised. Verification recommended before claiming broader device support.
 
 ### Test strategy
 
