@@ -1,10 +1,13 @@
 // ContentView.swift
-// DiveForge spike — Phase C2 Layer 2 UI
+// DiveForge spike — Phase C2 Layer 2 + Layer 3 UI
 
 import SwiftUI
 
 struct ContentView: View {
     @StateObject private var client = PeregrineClient()
+    @State private var selectedDiveIndex: Int? = nil
+    @State private var working: Bool = false
+    @State private var lastError: String? = nil
 
     var body: some View {
         VStack(spacing: 12) {
@@ -17,11 +20,55 @@ struct ContentView: View {
             HStack(spacing: 12) {
                 Button("Scan") { client.startScan() }
                     .buttonStyle(.borderedProminent)
+                    .disabled(client.connected || working)
                 Button("Disconnect") { client.stopScanAndDisconnect() }
                     .buttonStyle(.bordered)
-                    .disabled(!client.connected)
+                    .disabled(!client.connected || working)
             }
             Divider()
+
+            // Layer 3 controls
+            VStack(spacing: 8) {
+                HStack {
+                    Button("List dives") {
+                        Task { await runListDives() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!client.connected || working)
+
+                    Button("Download selected") {
+                        Task { await runDownloadSelected() }
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!client.connected || working || selectedDiveIndex == nil)
+                }
+
+                if !client.dives.isEmpty {
+                    Picker("Dive", selection: $selectedDiveIndex) {
+                        Text("Pick a dive").tag(Int?.none)
+                        ForEach(client.dives) { d in
+                            Text(String(format: "Dive %d  addr=0x%08x  fp=%@",
+                                        d.index, d.address, d.fingerprintHex))
+                                .tag(Int?.some(d.index))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+
+                if !client.downloadProgress.isEmpty {
+                    Text(client.downloadProgress)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let err = lastError {
+                    Text("Error: \(err)")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            Divider()
+
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 2) {
@@ -54,6 +101,31 @@ struct ContentView: View {
             }
         }
         .padding()
+    }
+
+    @MainActor
+    private func runListDives() async {
+        working = true
+        lastError = nil
+        defer { working = false }
+        do {
+            _ = try await client.listDives()
+        } catch {
+            lastError = "\(error)"
+        }
+    }
+
+    @MainActor
+    private func runDownloadSelected() async {
+        guard let idx = selectedDiveIndex else { return }
+        working = true
+        lastError = nil
+        defer { working = false }
+        do {
+            _ = try await client.downloadDive(at: idx)
+        } catch {
+            lastError = "\(error)"
+        }
     }
 
     private func symbol(for d: PeregrineClient.LogEntry.Direction) -> String {
