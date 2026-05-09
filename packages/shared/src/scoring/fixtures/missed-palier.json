@@ -1,9 +1,9 @@
 {
   "dive": {
     "maxDepthM": 25,
-    "avgDepthM": 21.5,
-    "durationSec": 1560,
-    "maxAscentRateMps": 0.146,
+    "avgDepthM": 21.76,
+    "durationSec": 1550,
+    "maxAscentRateMps": 0.22,
     "minWaterTempC": 29,
     "niveau": "N3"
   },
@@ -20,7 +20,7 @@
     },
     {
       "tSec": 10,
-      "depthM": 2.083333333333333,
+      "depthM": 6,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -30,7 +30,7 @@
     },
     {
       "tSec": 20,
-      "depthM": 4.166666666666666,
+      "depthM": 7.7272727272727275,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -40,7 +40,7 @@
     },
     {
       "tSec": 30,
-      "depthM": 6.25,
+      "depthM": 9.454545454545455,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -50,7 +50,7 @@
     },
     {
       "tSec": 40,
-      "depthM": 8.333333333333332,
+      "depthM": 11.181818181818182,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -60,7 +60,7 @@
     },
     {
       "tSec": 50,
-      "depthM": 10.416666666666668,
+      "depthM": 12.90909090909091,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -70,7 +70,7 @@
     },
     {
       "tSec": 60,
-      "depthM": 12.5,
+      "depthM": 14.636363636363637,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -80,7 +80,7 @@
     },
     {
       "tSec": 70,
-      "depthM": 14.583333333333334,
+      "depthM": 16.363636363636363,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -90,7 +90,7 @@
     },
     {
       "tSec": 80,
-      "depthM": 16.666666666666664,
+      "depthM": 18.090909090909093,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -100,7 +100,7 @@
     },
     {
       "tSec": 90,
-      "depthM": 18.75,
+      "depthM": 19.81818181818182,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -110,7 +110,7 @@
     },
     {
       "tSec": 100,
-      "depthM": 20.833333333333336,
+      "depthM": 21.545454545454547,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -120,7 +120,7 @@
     },
     {
       "tSec": 110,
-      "depthM": 22.916666666666664,
+      "depthM": 23.272727272727273,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1470,7 +1470,7 @@
     },
     {
       "tSec": 1460,
-      "depthM": 5.25,
+      "depthM": 5.1,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1480,7 +1480,7 @@
     },
     {
       "tSec": 1470,
-      "depthM": 4.5,
+      "depthM": 5.1,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1490,7 +1490,7 @@
     },
     {
       "tSec": 1480,
-      "depthM": 3.75,
+      "depthM": 2.9,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1500,7 +1500,7 @@
     },
     {
       "tSec": 1490,
-      "depthM": 3,
+      "depthM": 2,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1510,7 +1510,7 @@
     },
     {
       "tSec": 1500,
-      "depthM": 2.25,
+      "depthM": 1.3,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1520,7 +1520,7 @@
     },
     {
       "tSec": 1510,
-      "depthM": 1.5,
+      "depthM": 0.6,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1530,7 +1530,7 @@
     },
     {
       "tSec": 1520,
-      "depthM": 0.75,
+      "depthM": 0,
       "tempC": 29,
       "cnsPct": 0,
       "decoState": "ndl",
@@ -1560,16 +1560,6 @@
     },
     {
       "tSec": 1550,
-      "depthM": 0,
-      "tempC": 29,
-      "cnsPct": 0,
-      "decoState": "ndl",
-      "decoTimeSec": 0,
-      "decoDepthM": 0,
-      "ttsSec": null
-    },
-    {
-      "tSec": 1560,
       "depthM": 0,
       "tempC": 29,
       "cnsPct": 0,

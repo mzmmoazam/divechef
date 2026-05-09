@@ -145,11 +145,15 @@ function generateMissedPalier(): Fixture {
   const samples: DiveSampleInput[] = [];
   let t = 0;
 
-  // Descent to 25m over 2 min
-  for (let s = 0; s <= 120; s += 10) {
-    samples.push(makeSample(s, (s / 120) * 25));
-    t = s;
+  // Descent to 25m: skip 3-5m zone entirely in descent
+  // 0m -> 6m in one step, then 6m -> 25m over rest of 2 min
+  samples.push(makeSample(0, 0));
+  samples.push(makeSample(10, 6));
+  for (let s = 20; s <= 120; s += 10) {
+    const depth = 6 + (19 * (s - 10)) / 110;
+    samples.push(makeSample(s, depth));
   }
+  t = 120;
 
   // Bottom at 25m for 20 minutes
   for (let s = t + 10; s <= t + 1200; s += 10) {
@@ -165,14 +169,15 @@ function generateMissedPalier(): Fixture {
   }
   t = ascentStart + 130;
 
-  // Skip safety stop: go directly from 6m to surface at 5 m/min (within final ascent rule)
-  // 6m / 5 m/min = 72s
-  const finalStart = t;
-  for (let s = 10; s <= 80; s += 10) {
-    const depth = 6 - (6 * s) / 80;
-    samples.push(makeSample(finalStart + s, Math.max(0, depth)));
+  // Skip safety stop entirely: ascend from 6m to surface over 70s
+  // avoiding samples in 3-5m zone. Rate: 6m/70s*60 = 5.14 m/min (< 6, avoids final_ascent_too_fast)
+  // Intermediate depths: 5.1 (>5), 2.9 (<3), then linear to 0
+  // Max rate between consecutive: (5.1->2.9)/10s*60 = 13.2 m/min < 15 (avoids ascent rules)
+  const depths = [5.1, 5.1, 2.9, 2.0, 1.3, 0.6, 0.0];
+  for (let i = 0; i < depths.length; i++) {
+    samples.push(makeSample(t + (i + 1) * 10, depths[i]));
   }
-  t = finalStart + 80;
+  t += depths.length * 10;
 
   // Surface
   for (let s = 10; s <= 30; s += 10) {
