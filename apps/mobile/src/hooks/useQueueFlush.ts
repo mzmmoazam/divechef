@@ -15,6 +15,7 @@ async function uploadDive(payload: unknown): Promise<boolean> {
 export function useQueueFlush() {
   const [pendingCount, setPendingCount] = useState(0);
   const appStateRef = useRef(AppState.currentState);
+  const isFlushing = useRef(false);
 
   const refreshCount = useCallback(async () => {
     const count = await getPendingCount();
@@ -22,8 +23,14 @@ export function useQueueFlush() {
   }, []);
 
   const flush = useCallback(async () => {
-    await flushQueue(uploadDive);
-    await refreshCount();
+    if (isFlushing.current) return;
+    isFlushing.current = true;
+    try {
+      await flushQueue(uploadDive);
+      await refreshCount();
+    } finally {
+      isFlushing.current = false;
+    }
   }, [refreshCount]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { CartesianChart, Line } from 'victory-native';
 import { useDiveSamples } from '../hooks/useDives';
@@ -18,10 +18,10 @@ export function DepthProfileChart({ diveId }: DepthProfileChartProps) {
     );
   }
 
-  const chartData = samples.map((s) => ({
-    timeMin: s.tSec / 60,
-    depth: -s.depthM,
-  }));
+  const chartData = useMemo(
+    () => samples.map((s) => ({ timeMin: s.tSec / 60, depth: -s.depthM })),
+    [samples]
+  );
 
   return (
     <View style={styles.container}>

@@ -11,7 +11,7 @@ import type { RootStackParamList } from '../navigation/types';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
-const NIVEAUX: Niveau[] = ['N1', 'N2', 'N3', 'N4', 'INITIATEUR', 'MF1', 'MF2'];
+const NIVEAUX: Niveau[] = ['UNKNOWN', 'N1', 'N2', 'N3', 'N4', 'INITIATEUR', 'MF1', 'MF2'];
 const LOCALES: { value: Locale; label: string }[] = [
   { value: 'fr', label: 'Français' },
   { value: 'en', label: 'English' },
@@ -46,7 +46,7 @@ function ProfileRow({
 
 export default function ProfilScreen() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigation = useNavigation<NavProp>();
 
   const handleNiveauPress = useCallback(() => {
@@ -58,13 +58,14 @@ export default function ProfilScreen() {
         onPress: async () => {
           try {
             await api.patch('/api/me', { niveau: n });
+            await refreshUser();
           } catch {
             Alert.alert(t('common.error'));
           }
         },
       }))
     );
-  }, [t]);
+  }, [t, refreshUser]);
 
   const handleLocalePress = useCallback(() => {
     Alert.alert(
@@ -76,13 +77,14 @@ export default function ProfilScreen() {
           try {
             await api.patch('/api/me', { locale: l.value });
             await i18n.changeLanguage(l.value);
+            await refreshUser();
           } catch {
             Alert.alert(t('common.error'));
           }
         },
       }))
     );
-  }, [t]);
+  }, [t, refreshUser]);
 
   const handleSync = useCallback(() => {
     navigation.navigate('Sync');

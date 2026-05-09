@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CartesianChart, Line } from 'victory-native';
 
@@ -7,10 +7,25 @@ interface ScoreTrendChartProps {
 }
 
 export function ScoreTrendChart({ data }: ScoreTrendChartProps) {
-  const chartData = data.map((d, i) => ({
-    index: i,
-    score: d.score,
-  }));
+  const chartData = useMemo(
+    () => data.map((d, i) => ({ index: i, score: d.score })),
+    [data]
+  );
+
+  const axisOptions = useMemo(
+    () => ({
+      formatXLabel: (v: number | string) => {
+        const idx = Math.round(Number(v));
+        if (idx >= 0 && idx < data.length) {
+          const d = new Date(data[idx]!.date);
+          return `${d.getDate()}/${d.getMonth() + 1}`;
+        }
+        return '';
+      },
+      formatYLabel: (v: number | string) => `${Math.round(Number(v))}`,
+    }),
+    [data]
+  );
 
   return (
     <View style={styles.container}>
@@ -19,17 +34,7 @@ export function ScoreTrendChart({ data }: ScoreTrendChartProps) {
         xKey="index"
         yKeys={['score']}
         domain={{ y: [0, 100] }}
-        axisOptions={{
-          formatXLabel: (v) => {
-            const idx = Math.round(Number(v));
-            if (idx >= 0 && idx < data.length) {
-              const d = new Date(data[idx]!.date);
-              return `${d.getDate()}/${d.getMonth() + 1}`;
-            }
-            return '';
-          },
-          formatYLabel: (v) => `${Math.round(Number(v))}`,
-        }}
+        axisOptions={axisOptions}
       >
         {({ points }) => (
           <Line
