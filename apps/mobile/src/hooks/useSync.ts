@@ -45,6 +45,20 @@ export function useSync() {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    const unsub = addDiveComputerListener('diveComputerDisconnected', () => {
+      // Only transition to error if we're mid-sync (downloading or uploading)
+      setState((current) => {
+        if (current === 'downloading' || current === 'uploading') {
+          setError('ble_connection_lost');
+          return 'error';
+        }
+        return current;
+      });
+    });
+    return unsub;
+  }, []);
+
   const startSync = useCallback(async () => {
     abortRef.current = false;
     setError(null);
