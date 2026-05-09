@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getToken, clearToken } from './token';
+import { emitAuthRevoked } from './authEvents';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -21,6 +22,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       await clearToken();
+      emitAuthRevoked();
     }
     return Promise.reject(error);
   }

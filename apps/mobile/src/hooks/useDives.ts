@@ -4,7 +4,7 @@ import type { Dive, DiveSummary, DiveSample, Insight } from '@diveforge/shared/t
 
 export function useDiveList(limit = 20) {
   return useInfiniteQuery({
-    queryKey: ['dives'],
+    queryKey: ['dives', limit],
     queryFn: async ({ pageParam }) => {
       const { data } = await api.get<{ dives: DiveSummary[]; nextCursor: string | null }>(
         '/api/dives',

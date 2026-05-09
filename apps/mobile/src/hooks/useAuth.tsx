@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { User, Niveau, Locale } from '@diveforge/shared/types';
 import * as authService from '../services/auth';
 import { getToken, clearToken } from '../services/token';
+import { onAuthRevoked } from '../services/authEvents';
 
 interface AuthState {
   user: User | null;
@@ -41,15 +42,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  useEffect(() => {
+    return onAuthRevoked(() => {
+      setState({ user: null, isLoading: false, isAuthenticated: false });
+    });
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
-    const { user } = await authService.login(email, password);
-    setState({ user, isLoading: false, isAuthenticated: true });
+    setState((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const { user } = await authService.login(email, password);
+      setState({ user, isLoading: false, isAuthenticated: true });
+    } catch (error) {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      throw error;
+    }
   }, []);
 
   const signup = useCallback(
     async (email: string, password: string, niveau: Niveau, locale: Locale) => {
-      const { user } = await authService.signup(email, password, niveau, locale);
-      setState({ user, isLoading: false, isAuthenticated: true });
+      setState((prev) => ({ ...prev, isLoading: true }));
+      try {
+        const { user } = await authService.signup(email, password, niveau, locale);
+        setState({ user, isLoading: false, isAuthenticated: true });
+      } catch (error) {
+        setState((prev) => ({ ...prev, isLoading: false }));
+        throw error;
+      }
     },
     []
   );
