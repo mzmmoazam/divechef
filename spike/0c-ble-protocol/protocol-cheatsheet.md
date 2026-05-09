@@ -1,6 +1,14 @@
 # Shearwater Peregrine BLE wire protocol — research cheatsheet
 
-## ✅ Verified against real Peregrine (2026-05-09 via LightBlue Explorer on iOS)
+## ✅ Verified against real Peregrine (Layer 2 end-to-end — 2026-05-09)
+
+### Connect + discover + subscribe round-trip from Swift CoreBluetooth
+- Service UUID matched, characteristic UUID matched, notifications subscribe succeeded.
+- **MTU(write/withResponse) = 512 bytes** (negotiated, DLE active).
+- **MTU(write/withoutResponse) = 77 bytes** — 75 bytes payload per BLE frame after the 2-byte mini-header.
+- **Peregrine sends NO unsolicited bytes after subscribe** — it waits silently for client to initiate the protocol. Master/slave style.
+
+### Verified GATT layout (LightBlue Explorer)
 
 This section overrides the predictions below where they differ.
 
