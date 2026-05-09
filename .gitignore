@@ -1,0 +1,7 @@
+.claude/settings.local.json
+.mcp.json
+.claude/provider-overlay.json
+.claude/databricks-overlay.json
+.claude/settings.local.json.disabled
+.mcp.json.disabled
+.superpowers/
