@@ -26,6 +26,7 @@ export function useSync() {
   const [syncedCount, setSyncedCount] = useState(0);
   const queryClient = useQueryClient();
   const abortRef = useRef(false);
+  const discoveryUnsubRef = useRef<(() => void) | undefined>(undefined);
 
   useEffect(() => {
     const unsub = addDiveComputerListener('diveComputerDiscovered', (device) => {
@@ -55,19 +56,30 @@ export function useSync() {
       await DiveComputerNative.startScan(SERVICE_UUID);
 
       // Wait for first discovered device (up to 10s)
+      let discoveryUnsub: (() => void) | undefined;
       const device = await new Promise<ScanResult>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('no_device')), 10000);
-        const unsub = addDiveComputerListener('diveComputerDiscovered', (d) => {
+        const timeout = setTimeout(() => {
+          discoveryUnsub?.();
+          discoveryUnsubRef.current = undefined;
+          reject(new Error('no_device'));
+        }, 10000);
+        discoveryUnsub = addDiveComputerListener('diveComputerDiscovered', (d) => {
           clearTimeout(timeout);
-          unsub();
+          discoveryUnsub?.();
+          discoveryUnsubRef.current = undefined;
           resolve(d);
         });
+        discoveryUnsubRef.current = discoveryUnsub;
       });
+
+      if (abortRef.current) return;
 
       await DiveComputerNative.stopScan();
 
       setState('connecting');
       await DiveComputerNative.connect(device.identifier);
+
+      if (abortRef.current) return;
 
       setState('listing');
       const manifest = await DiveComputerNative.listDives();
@@ -112,6 +124,8 @@ export function useSync() {
 
   const cancel = useCallback(async () => {
     abortRef.current = true;
+    discoveryUnsubRef.current?.();
+    discoveryUnsubRef.current = undefined;
     await DiveComputerNative.stopScan();
     if (await DiveComputerNative.isConnected()) {
       await DiveComputerNative.disconnect();

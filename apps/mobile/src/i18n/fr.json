@@ -17,7 +17,8 @@
     "loginButton": "Se connecter",
     "signupButton": "Creer un compte",
     "noAccount": "Pas de compte ?",
-    "hasAccount": "Deja un compte ?"
+    "hasAccount": "Deja un compte ?",
+    "passwordMismatch": "Les mots de passe ne correspondent pas"
   },
   "onboarding": {
     "welcome": "Bienvenue sur DiveForge",

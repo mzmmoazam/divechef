@@ -12,7 +12,7 @@ export default function SignupScreen({ navigation }: AuthScreenProps<'Signup'>) 
   const handleNext = () => {
     if (!email.trim() || !password.trim()) return;
     if (password !== confirmPassword) {
-      Alert.alert(t('common.error'), 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.passwordMismatch'));
       return;
     }
     navigation.navigate('NiveauPicker', { email, password });

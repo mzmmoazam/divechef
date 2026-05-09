@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -44,7 +44,7 @@ export default function AccueilScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const renderHeader = () => {
+  const ListHeader = useMemo(() => {
     if (!lastDive) return null;
     return (
       <LastDiveCard
@@ -52,9 +52,9 @@ export default function AccueilScreen() {
         onPress={() => handleDivePress(lastDive.id)}
       />
     );
-  };
+  }, [lastDive, handleDivePress]);
 
-  const renderEmpty = () => {
+  const ListEmpty = useMemo(() => {
     if (isLoading) return null;
     return (
       <View style={styles.empty}>
@@ -64,7 +64,7 @@ export default function AccueilScreen() {
         </TouchableOpacity>
       </View>
     );
-  };
+  }, [isLoading, t, handleSync]);
 
   const renderItem = ({ item, index }: { item: DiveSummary; index: number }) => {
     // Skip the first item if it's shown in the header card
@@ -83,8 +83,8 @@ export default function AccueilScreen() {
         data={allDives}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={ListEmpty}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         refreshControl={

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
@@ -14,8 +14,11 @@ export default function NiveauPickerScreen({ navigation, route }: AuthScreenProp
   const { email, password } = route.params;
   const [selected, setSelected] = useState<Niveau | null>(null);
   const [loading, setLoading] = useState(false);
+  const inFlight = useRef(false);
 
   const handleSelect = async (niveau: Niveau) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSelected(niveau);
     setLoading(true);
 
@@ -31,6 +34,7 @@ export default function NiveauPickerScreen({ navigation, route }: AuthScreenProp
         err instanceof Error ? err.message : t('common.error')
       );
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   };
