@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "deviceModel": "Shearwater Peregrine",
+    "deviceSerial": "MOCK-001",
+    "externalId": "mock-dive-1",
+    "startedAt": "2025-03-15T09:30:00Z"
+  },
+  "dive": {
+    "startedAt": "2025-03-15T09:30:00Z",
+    "durationSec": 2040,
+    "maxDepthM": 19.4,
+    "avgDepthM": 12.8,
+    "minWaterTempC": 29.0,
+    "maxAscentRateMps": 0.14
+  },
+  "samples": [
+    { "tSec": 0, "depthM": 0.0, "tempC": 29.5, "cnsPct": 0, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 60, "depthM": 6.2, "tempC": 29.3, "cnsPct": 1, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 180, "depthM": 14.5, "tempC": 29.1, "cnsPct": 2, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 360, "depthM": 19.4, "tempC": 29.0, "cnsPct": 4, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 600, "depthM": 18.7, "tempC": 29.0, "cnsPct": 6, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 900, "depthM": 17.2, "tempC": 29.0, "cnsPct": 8, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1200, "depthM": 14.1, "tempC": 29.1, "cnsPct": 10, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1500, "depthM": 10.3, "tempC": 29.2, "cnsPct": 11, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1740, "depthM": 5.0, "tempC": 29.3, "cnsPct": 12, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1920, "depthM": 4.8, "tempC": 29.4, "cnsPct": 12, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 2040, "depthM": 0.0, "tempC": 29.5, "cnsPct": 12, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null }
+  ]
+}
