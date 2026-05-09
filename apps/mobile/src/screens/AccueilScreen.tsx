@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDiveList } from '../hooks/useDives';
 import { LastDiveCard } from '../components/LastDiveCard';
 import { DiveListItem } from '../components/DiveListItem';
+import { QueueBanner } from '../components/QueueBanner';
 import type { DiveSummary } from '@diveforge/shared/types';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -45,12 +46,16 @@ export default function AccueilScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const ListHeader = useMemo(() => {
-    if (!lastDive) return null;
     return (
-      <LastDiveCard
-        dive={lastDive}
-        onPress={() => handleDivePress(lastDive.id)}
-      />
+      <>
+        <QueueBanner />
+        {lastDive && (
+          <LastDiveCard
+            dive={lastDive}
+            onPress={() => handleDivePress(lastDive.id)}
+          />
+        )}
+      </>
     );
   }, [lastDive, handleDivePress]);
 
