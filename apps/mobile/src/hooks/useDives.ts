@@ -4,7 +4,7 @@ import type { Dive, DiveSummary, DiveSample, Insight } from '@diveforge/shared/t
 
 export function useDiveList(limit = 20) {
   return useInfiniteQuery({
-    queryKey: ['dives', limit],
+    queryKey: ['diveList', limit],
     queryFn: async ({ pageParam }) => {
       const { data } = await api.get<{ dives: DiveSummary[]; nextCursor: string | null }>(
         '/api/dives',
@@ -19,7 +19,7 @@ export function useDiveList(limit = 20) {
 
 export function useDiveDetail(id: string) {
   return useQuery({
-    queryKey: ['dives', id],
+    queryKey: ['dive', id],
     queryFn: async () => {
       const { data } = await api.get<{ dive: Dive; insights: Insight[] }>(`/api/dives/${id}`);
       return data;
@@ -30,7 +30,7 @@ export function useDiveDetail(id: string) {
 
 export function useDiveSamples(id: string, enabled = true) {
   return useQuery({
-    queryKey: ['dives', id, 'samples'],
+    queryKey: ['dive', id, 'samples'],
     queryFn: async () => {
       const { data } = await api.get<{ samples: DiveSample[] }>(`/api/dives/${id}/samples`);
       return data.samples;

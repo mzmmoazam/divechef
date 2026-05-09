@@ -23,7 +23,7 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer key={isAuthenticated ? 'authed' : 'guest'}>
       {isAuthenticated ? (
         <Stack.Navigator>
           <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
