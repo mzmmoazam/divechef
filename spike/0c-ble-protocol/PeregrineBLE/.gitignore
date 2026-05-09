@@ -1,0 +1,7 @@
+# Xcode user-specific state — should never be committed
+**/xcuserdata/
+**/*.xcuserstate
+DerivedData/
+build/
+*.swp
+*.lock

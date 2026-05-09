@@ -5,3 +5,5 @@
 .claude/settings.local.json.disabled
 .mcp.json.disabled
 .superpowers/
+.DS_Store
+**/.DS_Store
