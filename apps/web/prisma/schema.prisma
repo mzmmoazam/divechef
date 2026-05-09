@@ -1,15 +1,97 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Niveau {
+  N1
+  N2
+  N3
+  N4
+  INITIATEUR
+  MF1
+  MF2
+  UNKNOWN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  niveau       Niveau   @default(UNKNOWN)
+  locale       String   @default("fr")
+  createdAt    DateTime @default(now())
+  dives        Dive[]
+  devices      Device[]
+}
+
+model Device {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  bleAddress   String
+  model        String
+  serialNumber String?
+  nickname     String?
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([userId, bleAddress])
+}
+
+model Dive {
+  id               String       @id @default(cuid())
+  userId           String
+  user             User         @relation(fields: [userId], references: [id])
+  deviceId         String?
+  externalId       String
+  startedAt        DateTime
+  durationSec      Int
+  maxDepthM        Float
+  avgDepthM        Float
+  minWaterTempC    Float?
+  maxAscentRateMps Float
+  safetyScore      Int?
+  scoredAt         DateTime?
+  scoringVersion   String?
+  rawPayloadUrl    String?
+  samples          DiveSample[]
+  insights         Insight[]
+  createdAt        DateTime     @default(now())
+
+  @@unique([userId, externalId])
+  @@index([userId, startedAt])
+}
+
+model DiveSample {
+  id          BigInt @id @default(autoincrement())
+  diveId      String
+  dive        Dive   @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  tSec        Int
+  depthM      Float
+  tempC       Float?
+  cnsPct      Float?
+  decoState   String
+  decoTimeSec Int
+  decoDepthM  Float
+  ttsSec      Int?
+
+  @@index([diveId, tSec])
+}
+
+model Insight {
+  id        String   @id @default(cuid())
+  diveId    String
+  dive      Dive     @relation(fields: [diveId], references: [id], onDelete: Cascade)
+  ruleId    String
+  severity  String
+  evidence  Json
+  createdAt DateTime @default(now())
+
+  @@index([diveId])
 }
