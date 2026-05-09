@@ -1,5 +1,23 @@
 # Shearwater Peregrine BLE wire protocol — research cheatsheet
 
+## ✅ Verified against real Peregrine (2026-05-09 via LightBlue Explorer on iOS)
+
+This section overrides the predictions below where they differ.
+
+| Field | Verified value |
+|---|---|
+| Service UUID | `FE25C237-0ECE-443C-B0AA-E02033E7029D` ✅ matches prediction |
+| SPP characteristic UUID | `27B7570B-359E-45A3-91BB-CF7E70049BD2` ❗ **not** the Telit `00000001-...-008025...` pattern |
+| Number of custom characteristics | **1** (single bidirectional pipe) — **not** the 4-char Telit pattern |
+| Properties | Notify + Write + WriteNoResponse + un-readable |
+| Descriptor | Client Characteristic Configuration Descriptor present (initial value `0` = notifications off until subscribe) |
+| User Description | text "SPP" |
+| iOS-assigned peripheral identifier | varies per device — DO NOT hardcode |
+
+**Implication:** Subsurface's property-based discovery pattern is the right approach since hardcoded Telit UUIDs would have failed against this real device. For Plan 3 production, our discovery code matches by service UUID + property bitmask, then uses the single SPP characteristic for both directions. **No credit-flow handshakes needed** — that simplifies the Swift implementation significantly compared to what the cheatsheet originally assumed.
+
+---
+
 Source readings:
 - `/Users/mzmmoazam/Documents/Projects/diveForge/spike/0b-desktop-harness/build/libdivecomputer/src/shearwater_common.c`
 - `/Users/mzmmoazam/Documents/Projects/diveForge/spike/0b-desktop-harness/build/libdivecomputer/src/shearwater_common.h`
