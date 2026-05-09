@@ -1,0 +1,150 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Reessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "logout": "Deconnexion",
+    "ok": "OK"
+  },
+  "auth": {
+    "login": "Connexion",
+    "signup": "Inscription",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "loginButton": "Se connecter",
+    "signupButton": "Creer un compte",
+    "noAccount": "Pas de compte ?",
+    "hasAccount": "Deja un compte ?"
+  },
+  "onboarding": {
+    "welcome": "Bienvenue sur DiveForge",
+    "subtitle": "Intelligence de plongee personnelle",
+    "pickNiveau": "Quel est votre niveau ?",
+    "pickLanguage": "Langue de l'application",
+    "disclaimer": "DiveForge est un outil de feedback. Il ne remplace ni votre formation, ni votre ordinateur de plongee, ni votre moniteur. Les seuils sont bases sur les normes FFESSM/MN90 et doivent etre verifies par un professionnel.",
+    "acceptDisclaimer": "J'accepte",
+    "blePermission": "DiveForge a besoin du Bluetooth pour communiquer avec votre ordinateur de plongee.",
+    "grantBle": "Autoriser le Bluetooth"
+  },
+  "sync": {
+    "title": "Synchronisation",
+    "scanning": "Recherche de votre ordinateur...",
+    "connecting": "Connexion a {{deviceName}}...",
+    "downloading": "Telechargement des plongees ({{received}}/{{expected}})...",
+    "complete": "{{count}} plongee(s) synchronisee(s)",
+    "noDevice": "Aucun ordinateur de plongee detecte",
+    "retryButton": "Reessayer",
+    "permissionDenied": "Acces Bluetooth refuse. Verifiez les reglages de votre appareil.",
+    "openSettings": "Ouvrir les reglages",
+    "connectionLost": "Connexion perdue. Les plongees deja synchronisees sont conservees.",
+    "partialSuccess": "{{synced}} plongee(s) sur {{total}} synchronisee(s). Reessayez pour le reste."
+  },
+  "home": {
+    "title": "Accueil",
+    "lastDive": "Derniere plongee",
+    "noDives": "Aucune plongee. Synchronisez votre ordinateur pour commencer.",
+    "syncButton": "Synchroniser",
+    "score": "Score : {{score}}/100",
+    "depth": "{{depth}} m",
+    "duration": "{{duration}} min"
+  },
+  "detail": {
+    "title": "Detail de la plongee",
+    "date": "Date",
+    "duration": "Duree",
+    "maxDepth": "Profondeur max",
+    "avgDepth": "Profondeur moyenne",
+    "temp": "Temperature min",
+    "score": "Score de securite",
+    "scoreValue": "{{score}}/100",
+    "insights": "Analyses",
+    "depthProfile": "Profil de profondeur",
+    "noInsights": "Aucune alerte pour cette plongee.",
+    "disclaimer": "DiveForge est un outil de feedback, pas un dispositif medical."
+  },
+  "trends": {
+    "title": "Tendances",
+    "period": "30 derniers jours",
+    "avgScore": "Score moyen",
+    "avgDepth": "Profondeur moyenne",
+    "diveCount": "Nombre de plongees",
+    "scoreTrend": "Evolution du score",
+    "noData": "Pas assez de donnees. Synchronisez vos plongees."
+  },
+  "profile": {
+    "title": "Profil",
+    "email": "E-mail",
+    "niveau": "Niveau",
+    "locale": "Langue",
+    "connectedDevice": "Appareil connecte",
+    "noDevice": "Aucun appareil",
+    "syncButton": "Synchroniser",
+    "logoutButton": "Se deconnecter"
+  },
+  "queue": {
+    "pending": "En attente de synchronisation",
+    "pendingCount": "{{count}} plongee(s) en attente d'envoi"
+  },
+  "niveau": {
+    "N1": "Niveau 1",
+    "N2": "Niveau 2",
+    "N3": "Niveau 3",
+    "N4": "Niveau 4",
+    "INITIATEUR": "Initiateur",
+    "MF1": "MF1",
+    "MF2": "MF2",
+    "UNKNOWN": "Non renseigne"
+  },
+  "insights": {
+    "ascent_too_fast": {
+      "title": "Remontee rapide",
+      "body": "Vous etes remonte a {{maxRateMpm}} m/min entre {{startSec}}s et {{endSec}}s. Norme MN90 : 15 m/min."
+    },
+    "ascent_dangerous": {
+      "title": "Remontee dangereuse",
+      "body": "Vitesse de remontee de {{maxRateMpm}} m/min soutenue sur plus de 60s. Risque d'accident de decompression."
+    },
+    "final_ascent_too_fast": {
+      "title": "Remontee finale rapide",
+      "body": "Remontee de 6m a la surface a {{rateMpm}} m/min. La norme recommande moins de 6 m/min dans cette zone."
+    },
+    "palier_securite_manque": {
+      "title": "Palier de securite absent",
+      "body": "Profondeur max {{maxDepthM}} m sans palier de securite (3-5 m pendant 3 min). Recommande pour toute plongee au-dela de 6 m."
+    },
+    "palier_securite_court": {
+      "title": "Palier de securite court",
+      "body": "Palier de securite de {{actualSec}}s au lieu des 180s recommandees."
+    },
+    "palier_deco_manque": {
+      "title": "Palier de decompression manque",
+      "body": "Palier obligatoire a {{decoDepthM}} m pendant {{decoTimeSec}}s non respecte. Risque immediat d'ADD."
+    },
+    "profondeur_depasse_niveau_leger": {
+      "title": "Profondeur legere au-dela du niveau",
+      "body": "Profondeur max {{maxDepthM}} m. Limite pour votre niveau ({{niveau}}) : {{limitM}} m."
+    },
+    "profondeur_depasse_niveau_grave": {
+      "title": "Profondeur grave au-dela du niveau",
+      "body": "Profondeur max {{maxDepthM}} m, depassement de {{excessM}} m au-dela de la limite de votre niveau ({{niveau}})."
+    },
+    "temperature_basse": {
+      "title": "Eau froide",
+      "body": "Temperature minimum {{minTempC}} C pendant {{durationMin}} min. Le froid augmente la consommation et le risque de narcose."
+    },
+    "plongee_profonde": {
+      "title": "Plongee profonde",
+      "body": "Profondeur maximale atteinte : {{maxDepthM}} m. Information uniquement."
+    }
+  },
+  "summaryTips": {
+    "improving_ascent_control": "Vos vitesses de remontee s'ameliorent. Continuez a surveiller votre ordinateur en fin de plongee.",
+    "consistent_safety_stops": "Vos paliers de securite sont reguliers. Excellent reflexe de securite.",
+    "depth_management_improving": "Votre gestion de la profondeur progresse. Restez vigilant aux limites de votre niveau.",
+    "overall_good": "Vos plongees sont conformes aux bonnes pratiques. Continuez ainsi !",
+    "needs_attention": "Plusieurs alertes recentes. Revoyez les plongees concernees et consultez votre moniteur si besoin."
+  }
+}
