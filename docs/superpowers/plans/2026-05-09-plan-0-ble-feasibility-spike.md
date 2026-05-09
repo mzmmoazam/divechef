@@ -1,12 +1,14 @@
 # Plan 0 — DiveForge BLE/libdivecomputer Feasibility Spike
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **AMENDED 2026-05-09 (mid-spike):** Phase A and B together discovered that (1) Shearwater Cloud's mobile export is SQLite, not UDDF, and (2) upstream libdivecomputer's BLE transport is BlueZ-only, so `dctool` BLE on macOS/iOS does not work. Phase B was repurposed accordingly — its detailed instructions below now reflect the actual work done, not the original plan. Phase C has been **wholly replaced** with a leaner pure-Swift CoreBluetooth spike (no React Native, no cross-compiled libdc-for-iOS, no PATH-1/PATH-2 fallback). The original Phase C (RN+TurboModule mixed with BLE protocol exploration) is preserved in git history under commits up to `f8fd235`. See "Phase C (revised)" below.
 
-**Goal:** Prove the data path from Shearwater Peregrine → BLE → libdivecomputer → parsed JSON works end-to-end on at least one mobile platform, and document the actual dive data schema, before committing to production schemas in Plans 1–3.
+**Goal:** Prove the data path from Shearwater Peregrine → BLE → libdivecomputer parser → parsed JSON works end-to-end, and document the actual dive data schema, before committing to production schemas in Plans 1–3.
 
-**Architecture:** Three independent phases run in sequence. Phase A inspects existing UDDF exports to lock the data schema cheaply. Phase B builds libdivecomputer on macOS and confirms BLE talks to the Peregrine via the reference C tool. Phase C wraps that pipeline as a minimal React Native TurboModule on iOS to prove the production path is viable.
+**Architecture:** Phase A inspects an existing dive export to lock the data schema cheaply. Phase B builds libdivecomputer on macOS so we have a known-good parser to point any byte stream at. Phase C (revised) implements just the Peregrine BLE wire protocol over CoreBluetooth in pure Swift on iOS, then runs the resulting bytes through the parser to confirm equivalence with Phase A's output.
 
-**Tech Stack:** Node 20 + TypeScript (Phase A), libdivecomputer + Homebrew toolchain (Phase B), React Native bare workflow + Swift + iOS toolchain (Phase C).
+**Tech Stack:** Python + SQLite + libdivecomputer (Phase A), libdivecomputer + Homebrew toolchain (Phase B), pure Swift + CoreBluetooth + Xcode (Phase C revised).
 
 **All spike code lives under `spike/` and may be deleted after Plan 0 finishes. The real deliverable is `spike/findings.md`.**
 
@@ -589,531 +591,225 @@ git commit -m "spike(B): document libdivecomputer + BLE findings"
 
 ---
 
-## Phase C — RN TurboModule spike on iOS (3–4 days)
+## Phase C (revised) — Pure Swift CoreBluetooth BLE spike (5–7 days, C2 time-boxed at 4 days)
 
-Goal: prove that the same pipeline works inside a React Native bare app on a real iPhone.
+> **Why revised:** Phase B confirmed libdivecomputer's BLE transport is BlueZ-only. The original Phase C mixed three concerns — RN scaffolding, libdc-iOS cross-compile, and BLE — and would have spent most of its time on the engineering pieces (already-known costs) instead of the actual unknown (the Peregrine wire protocol over CoreBluetooth). Revised Phase C focuses laser-narrow on the BLE protocol question. RN bridging and Android port are deferred to production Plan 3 as known-cost engineering.
 
-### Task C1: Create the bare RN sandbox app
+Goal: produce a pure Swift CLI tool or single-screen iOS app that connects to a Shearwater Peregrine over CoreBluetooth, runs the Shearwater BLE wire protocol, downloads one dive's raw bytes, and saves them to a file. We then verify those bytes parse identically to the bytes extracted from the SQLite export in Phase A.
 
-**Files:**
-- Create: `spike/0c-rn-spike/` (new RN project)
-
-- [ ] **Step 1: Generate a bare RN project**
-
-```bash
-cd spike
-npx @react-native-community/cli init RNSpike --skip-install
-```
-
-(If the CLI complains about being deprecated, follow the prompt to use the current init command. The exact CLI evolves; goal is a bare RN project, NOT Expo managed.)
-
-- [ ] **Step 2: Rename to lowercase folder for consistency**
-
-```bash
-mv RNSpike 0c-rn-spike
-cd 0c-rn-spike
-npm install
-cd ios && pod install && cd ..
-cd ../..   # back to repo root
-```
-
-- [ ] **Step 3: Verify it runs**
-
-```bash
-cd spike/0c-rn-spike
-npx react-native run-ios
-```
-
-Expected: simulator launches and shows the default RN welcome screen.
-
-If pod install fails on a fresh Mac, install Xcode + CommandLineTools and retry.
-
-- [ ] **Step 4: Add a sane gitignore (the RN init usually generates one — verify)**
-
-```bash
-cat spike/0c-rn-spike/.gitignore | head -20
-```
-
-Confirm `node_modules/`, `ios/Pods/`, `ios/build/`, `android/build/` are listed.
-
-- [ ] **Step 5: Commit the scaffold**
-
-```bash
-cd ../..
-git add spike/0c-rn-spike/
-git commit -m "spike(C): scaffold bare RN sandbox app"
-```
-
----
-
-### Task C2: Cross-compile libdivecomputer for iOS
+### Task C1: Research Peregrine BLE wire protocol from libdc source
 
 **Files:**
-- Create: `spike/0c-rn-spike/scripts/build-libdc-ios.sh`
+- Create: `spike/0c-ble-protocol/protocol-cheatsheet.md`
 
-This is the trickiest task. libdivecomputer is C with autoconf — we need to build it for iOS arm64 (device) and produce a static library.
+This task is a literature review — read libdivecomputer's Shearwater driver source and Subsurface's CoreBluetooth wrapper (license: GPL — read-only for understanding, do not copy verbatim) and produce a cheatsheet a Swift implementer can follow.
 
-- [ ] **Step 1: Write the iOS build script**
-
-`spike/0c-rn-spike/scripts/build-libdc-ios.sh`:
+- [ ] **Step 1: Read the Shearwater driver in libdc source**
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Build libdivecomputer as a static library for iOS arm64 (physical device).
-# Simulator support comes later if needed — physical-device-only is enough for spike.
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUILD_DIR="$RN_DIR/native/libdc-build"
-SRC_DIR="$BUILD_DIR/src"
-INSTALL_DIR="$BUILD_DIR/ios-arm64"
-
-mkdir -p "$BUILD_DIR"
-
-if [[ ! -d "$SRC_DIR" ]]; then
-  git clone https://github.com/libdivecomputer/libdivecomputer.git "$SRC_DIR"
-fi
-cd "$SRC_DIR"
-autoreconf --install
-
-SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
-HOST="aarch64-apple-darwin"
-ARCH="arm64"
-MIN_IOS="14.0"
-
-export CC="$(xcrun --sdk iphoneos -f clang)"
-export CFLAGS="-arch $ARCH -isysroot $SDK_PATH -miphoneos-version-min=$MIN_IOS -fembed-bitcode"
-export LDFLAGS="-arch $ARCH -isysroot $SDK_PATH -miphoneos-version-min=$MIN_IOS"
-
-./configure \
-  --host=$HOST \
-  --prefix="$INSTALL_DIR" \
-  --disable-shared \
-  --enable-static \
-  --disable-examples
-
-make clean || true
-make -j"$(sysctl -n hw.ncpu)"
-make install
-
-echo
-echo "Static lib at: $INSTALL_DIR/lib/libdivecomputer.a"
-echo "Headers at:    $INSTALL_DIR/include/"
+ls /Users/mzmmoazam/Documents/Projects/diveForge/spike/0b-desktop-harness/build/libdivecomputer/src/shearwater_*
 ```
 
-```bash
-mkdir -p spike/0c-rn-spike/scripts
-chmod +x spike/0c-rn-spike/scripts/build-libdc-ios.sh
-```
+Read every `shearwater_*.c` and `shearwater_*.h` file. Note especially:
+- The wire protocol byte sequences (request/response framing)
+- The dive-list and dive-download command bytes
+- How the driver reads/writes a generic byte stream (this is what we'll reproduce on top of CoreBluetooth)
 
-- [ ] **Step 2: Run the build**
+- [ ] **Step 2: Cross-reference Subsurface's CoreBluetooth code (read-only)**
 
-```bash
-spike/0c-rn-spike/scripts/build-libdc-ios.sh
-```
+Look at Subsurface's `core/qt-ble.cpp` (and adjacent files) on github.com/subsurface/subsurface for:
+- The GATT service UUID and characteristic UUIDs Shearwater devices advertise
+- MTU / packet-fragmentation patterns
+- Connection lifecycle (notifications, write-without-response vs write-with-response)
 
-Expected: produces `libdivecomputer.a` and headers under `spike/0c-rn-spike/native/libdc-build/ios-arm64/`. Time: 2–5 min.
+**Do NOT copy code — Subsurface is GPL.** Paraphrase patterns into the cheatsheet and cite the file:line as a reference for someone with rights to look up the original.
 
-If the build fails on a missing system dep (libxml2 isn't required, but Bluetooth integration might be — read the error), one of two things has happened:
-- libdivecomputer's BLE backend has Mac/iOS-specific code that needs explicit enable flags. Check `./configure --help` for transport options. If BLE on iOS isn't supported by libdivecomputer's mainline, this is a **major spike finding** to document — it would mean we need to do the BLE transport in Swift and feed bytes into libdivecomputer's parsing layer instead of using libdivecomputer's BLE transport.
-- Missing CoreBluetooth integration. Same finding.
+- [ ] **Step 3: Produce the cheatsheet**
 
-**If the build succeeds but libdivecomputer's BLE transport doesn't actually open BLE connections on iOS, that is the single most important spike finding.** Document it loudly in `findings.md`.
-
-- [ ] **Step 3: Add `native/libdc-build/` to gitignore**
-
-`spike/0c-rn-spike/.gitignore` — add a line:
-
-```
-native/libdc-build/
-```
-
-- [ ] **Step 4: Commit the script**
-
-```bash
-git add spike/0c-rn-spike/scripts/build-libdc-ios.sh spike/0c-rn-spike/.gitignore
-git commit -m "spike(C): build libdivecomputer static lib for iOS arm64"
-```
-
----
-
-### Task C3: Add a Swift native module to the RN app
-
-**Files:**
-- Create: `spike/0c-rn-spike/ios/DiveComputer.swift`
-- Create: `spike/0c-rn-spike/ios/DiveComputer.m`
-- Modify: `spike/0c-rn-spike/ios/RNSpike.xcodeproj` (via Xcode — manual steps)
-
-This task adds a minimal Objective-C++/Swift bridge exposing one method: `downloadOneDive(bleAddress) → JSON string`. We lean on libdivecomputer for parsing; if BLE-transport-on-iOS is a problem (Phase C2 finding), we wire CoreBluetooth in Swift and pass raw bytes to libdivecomputer's parser.
-
-- [ ] **Step 1: Open Xcode**
-
-```bash
-open spike/0c-rn-spike/ios/RNSpike.xcworkspace
-```
-
-- [ ] **Step 2: USER ACTION in Xcode — link the static lib**
-
-In Xcode:
-1. Select the `RNSpike` target → "Build Phases" → "Link Binary With Libraries" → `+` → "Add Other..." → "Add Files..." → navigate to `native/libdc-build/ios-arm64/lib/libdivecomputer.a` → Add.
-2. "Build Settings" → "Header Search Paths" → add: `$(SRCROOT)/../native/libdc-build/ios-arm64/include` (recursive: NO).
-3. "Build Settings" → search "Other Linker Flags" → add: `-lc++` (libdivecomputer C, but RN uses C++; this avoids link errors).
-4. Capabilities → Bluetooth — enable it. Add `Privacy - Bluetooth Always Usage Description` to `Info.plist`: "DiveForge spike: read your dive computer over Bluetooth".
-
-- [ ] **Step 3: Create `DiveComputer.swift`**
-
-In Xcode, File → New → File → Swift File → name `DiveComputer.swift`. Xcode will offer to create a bridging header — accept. Then write:
-
-```swift
-import Foundation
-
-@objc(DiveComputer)
-class DiveComputer: NSObject {
-
-  @objc
-  static func requiresMainQueueSetup() -> Bool { return false }
-
-  @objc
-  func downloadOneDive(_ bleAddress: NSString,
-                       resolve: @escaping RCTPromiseResolveBlock,
-                       reject: @escaping RCTPromiseRejectBlock) {
-    // Phase C scope: prove the pipeline. Two possible paths depending on Phase C2 findings:
-    //
-    // PATH 1: libdivecomputer's BLE transport works on iOS.
-    //   Call into libdivecomputer C API: dc_context_new, dc_descriptor for shearwater_petrel,
-    //   dc_iostream_open with BLE transport, dc_device_open, iterate dives, parse, return JSON.
-    //
-    // PATH 2: We do BLE in Swift via CoreBluetooth, feed bytes into libdivecomputer's parser only.
-    //   Implement CBCentralManager, scan/connect/discover services/characteristics,
-    //   accumulate raw payload, call libdivecomputer's parsing-only API to decode.
-    //
-    // For the spike, write whichever is unblocked by C2's findings. Stub out and return a fixed
-    // JSON if neither is working yet — at minimum verify the JS bridge round-trips.
-
-    let stub = """
-    { "spike_status": "bridge_alive",
-      "ble_address_received": "\(bleAddress)",
-      "next_step": "wire libdivecomputer C calls or CoreBluetooth here" }
-    """
-    resolve(stub)
-  }
-}
-```
-
-- [ ] **Step 4: Create `DiveComputer.m` (Objective-C bridge for RN)**
-
-In Xcode, File → New → File → Objective-C File → name `DiveComputer.m`. Decline header. Write:
-
-```objc
-#import <React/RCTBridgeModule.h>
-
-@interface RCT_EXTERN_MODULE(DiveComputer, NSObject)
-
-RCT_EXTERN_METHOD(downloadOneDive:(NSString *)bleAddress
-                  resolve:(RCTPromiseResolveBlock)resolve
-                  reject:(RCTPromiseRejectBlock)reject)
-
-@end
-```
-
-- [ ] **Step 5: Build the Xcode project**
-
-In Xcode: Product → Build. Expected: builds clean. If there are linker errors about missing symbols from libdivecomputer, double-check the static lib was added in step 2.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add spike/0c-rn-spike/ios/DiveComputer.swift spike/0c-rn-spike/ios/DiveComputer.m spike/0c-rn-spike/ios/RNSpike.xcodeproj/project.pbxproj
-git commit -m "spike(C): minimal Swift+ObjC native module skeleton"
-```
-
----
-
-### Task C4: Call the native module from JS and show JSON
-
-**Files:**
-- Modify: `spike/0c-rn-spike/App.tsx`
-
-- [ ] **Step 1: Replace `App.tsx` with a minimal scan/download UI**
-
-```tsx
-import React, { useState } from "react";
-import { NativeModules, SafeAreaView, ScrollView, Text, TextInput, View, Pressable, StyleSheet } from "react-native";
-
-const { DiveComputer } = NativeModules;
-
-export default function App() {
-  const [addr, setAddr] = useState("");
-  const [output, setOutput] = useState("Press download to call native module.");
-
-  const onDownload = async () => {
-    try {
-      const json = await DiveComputer.downloadOneDive(addr);
-      setOutput(json);
-    } catch (e: any) {
-      setOutput(`ERROR: ${e?.message ?? String(e)}`);
-    }
-  };
-
-  return (
-    <SafeAreaView style={s.root}>
-      <Text style={s.title}>DiveForge spike — RN bridge</Text>
-      <TextInput
-        style={s.input}
-        placeholder="BLE address (paste from Phase B)"
-        value={addr}
-        onChangeText={setAddr}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <Pressable style={s.button} onPress={onDownload}>
-        <Text style={s.buttonText}>downloadOneDive</Text>
-      </Pressable>
-      <ScrollView style={s.output}>
-        <Text style={s.mono}>{output}</Text>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const s = StyleSheet.create({
-  root: { flex: 1, padding: 16, gap: 12 },
-  title: { fontSize: 18, fontWeight: "600" },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6 },
-  button: { backgroundColor: "#2563eb", padding: 12, borderRadius: 8, alignItems: "center" },
-  buttonText: { color: "white", fontWeight: "600" },
-  output: { flex: 1, borderWidth: 1, borderColor: "#eee", padding: 8, borderRadius: 6 },
-  mono: { fontFamily: "Menlo", fontSize: 11 },
-});
-```
-
-- [ ] **Step 2: Run on physical iPhone**
-
-```bash
-cd spike/0c-rn-spike
-npx react-native run-ios --device
-```
-
-(If the CLI doesn't auto-detect your phone, follow the printed instructions to run from Xcode with your phone selected as the target.)
-
-Expected: app launches on phone, shows the title + input + button.
-
-- [ ] **Step 3: Tap the button and observe**
-
-Tap "downloadOneDive". The output area should show the stub JSON from Task C3 step 3:
-
-```json
-{ "spike_status": "bridge_alive", "ble_address_received": "...", "next_step": "wire libdivecomputer C calls or CoreBluetooth here" }
-```
-
-This is the bridge-roundtrip checkpoint. **If you see this, the JS↔native plumbing works** — only the libdivecomputer C wiring remains.
+Write `spike/0c-ble-protocol/protocol-cheatsheet.md` covering:
+- GATT layer (service UUID, characteristic UUIDs, MTU, properties)
+- Wire protocol over the BLE byte stream (handshake, dive-list, dive-download, end-of-transmission)
+- File:line citations into libdc source for each operation
+- A list of open questions / risks
+- A 3–7-step ordered next-actions list for the C2 Swift implementer
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd ../..
-git add spike/0c-rn-spike/App.tsx
-git commit -m "spike(C): minimal UI calls native bridge"
+cd /Users/mzmmoazam/Documents/Projects/diveForge
+git add spike/0c-ble-protocol/protocol-cheatsheet.md
+git commit -m "spike(C1): Peregrine BLE protocol research cheatsheet"
 ```
 
----
-
-### Task C5: Wire libdivecomputer (or CoreBluetooth) into the native module
+### Task C2: USER ACTION — Pure Swift CoreBluetooth iOS app (time-boxed 4 days)
 
 **Files:**
-- Modify: `spike/0c-rn-spike/ios/DiveComputer.swift`
-- Possibly create: `spike/0c-rn-spike/ios/LibDC.h` (umbrella header)
+- Create: `spike/0c-ble-protocol/PeregrineBLE/` (new Xcode iOS project)
 
-This is the open-ended part. Concrete instructions depend entirely on Phase B/C2 findings.
+This is intentionally NOT React Native. RN bridging is deferred to production Plan 3. The spike is about proving the BLE protocol works over CoreBluetooth on iOS. Once that's proven, wrapping a working Swift implementation in a TurboModule is mechanical.
 
-- [ ] **Step 1: Choose path based on Phase C2 finding**
+- [ ] **Step 1: USER ACTION — Create a new Xcode project**
 
-Read `spike/0c-rn-spike/native/libdc-build/...` build log + your Phase B notes. Pick:
-- **PATH 1 (libdivecomputer BLE on iOS works):** call libdivecomputer's `dc_context_new`, `dc_descriptor_*`, `dc_iostream_open` with BLE transport, `dc_device_open`, `dc_device_foreach`. Convert results to JSON.
-- **PATH 2 (libdivecomputer BLE on iOS doesn't work, but parsing does):** implement `CBCentralManager` flow in Swift to scan, connect, discover Shearwater services, read characteristic data, accumulate the dive payload. Then call libdivecomputer's parser-only API (`dc_parser_new_from_data` or similar) to decode the bytes.
+In Xcode: File → New → Project → iOS → App → name `PeregrineBLE`, language Swift, interface SwiftUI. Save it under `spike/0c-ble-protocol/PeregrineBLE/`.
 
-- [ ] **Step 2: Create the umbrella header for libdivecomputer**
+Configure target:
+- Capabilities → Bluetooth — enable.
+- Info.plist → add `NSBluetoothAlwaysUsageDescription` = "DiveForge spike: read your dive computer over Bluetooth".
+- Deployment target: iOS 14.0 (matches what we'll use in production).
+- Signing: your personal Apple ID team for development signing.
 
-`spike/0c-rn-spike/ios/LibDC.h`:
+- [ ] **Step 2: USER ACTION — Implement scan + connect**
 
-```c
-#ifndef LibDC_h
-#define LibDC_h
-#include <libdivecomputer/context.h>
-#include <libdivecomputer/descriptor.h>
-#include <libdivecomputer/iostream.h>
-#include <libdivecomputer/device.h>
-#include <libdivecomputer/parser.h>
-#endif
-```
+Following the cheatsheet from C1, implement a `PeregrineClient` Swift class that:
+1. Owns a `CBCentralManager` and conforms to `CBCentralManagerDelegate`.
+2. Scans for peripherals advertising the Shearwater service UUID.
+3. On discovery, connects to the first matching peripheral.
+4. Discovers the Shearwater service and characteristics.
+5. Subscribes to notifications on the read characteristic.
+6. Exposes `func sendBytes(_ data: Data)` that writes to the write characteristic, and a delegate / closure / async stream that surfaces incoming notification bytes.
 
-In Xcode: add this file to the bridging header (`RNSpike-Bridging-Header.h`):
+Single-screen SwiftUI test harness:
+- "Scan" button → starts scanning
+- Status label: scanning / connected to <name>
+- Log view: incoming bytes hex-dumped
 
-```c
-#import "LibDC.h"
-```
+USER ACTION: turn on Peregrine, ensure NOT connected to Shearwater Cloud (only one BLE master at a time), tap Scan, verify connection.
 
-- [ ] **Step 3: Implement the chosen path in `DiveComputer.swift`**
+- [ ] **Step 3: USER ACTION — Implement the wire protocol**
 
-The minimum success criterion: **`downloadOneDive` returns a JSON string with at least one dive's depth profile from your Peregrine.**
+Add a method `func downloadOneDive(diveNumber: Int) async throws -> Data` that, on top of the byte-level transport from Step 2, executes the Shearwater wire protocol from C1's cheatsheet:
+1. Send connection-handshake bytes per cheatsheet
+2. Send dive-list query, receive list
+3. Send dive-download request for the selected dive number
+4. Accumulate response bytes until end-of-transmission marker
+5. Return the assembled `Data` blob
 
-**PATH 1 skeleton (libdivecomputer BLE on iOS).** Replace the stub body with this scaffold; fill in the iteration callback to collect samples:
+Add a "Download dive #5" button to the test harness. Save the result to the iOS Documents directory and surface its size on screen.
 
-```swift
-import Foundation
+USER ACTION: tap Scan → connect → tap Download → confirm a multi-KB blob appears.
 
-@objc(DiveComputer)
-class DiveComputer: NSObject {
-  @objc static func requiresMainQueueSetup() -> Bool { false }
+- [ ] **Step 4: USER ACTION — Export the blob to your Mac**
 
-  @objc
-  func downloadOneDive(_ bleAddress: NSString,
-                       resolve: @escaping RCTPromiseResolveBlock,
-                       reject: @escaping RCTPromiseRejectBlock) {
-    var ctx: OpaquePointer? = nil
-    var desc: OpaquePointer? = nil
-    var io: OpaquePointer? = nil
-    var dev: OpaquePointer? = nil
-    defer {
-      if dev != nil  { dc_device_close(dev) }
-      if io  != nil  { dc_iostream_close(io) }
-      if desc != nil { dc_descriptor_free(desc) }
-      if ctx != nil  { dc_context_free(ctx) }
-    }
+Use Files app (or the Xcode device window) to copy the saved blob from the iPhone to your Mac. Place it at `/tmp/dive-blobs/c2-downloaded.bin`.
 
-    guard dc_context_new(&ctx) == DC_STATUS_SUCCESS else {
-      reject("ctx_new", "dc_context_new failed", nil); return
-    }
+- [ ] **Step 5: Time-box / fallback decision**
 
-    // Look up the Shearwater Petrel-family descriptor (Peregrine reuses this protocol).
-    var iter: OpaquePointer? = nil
-    guard dc_descriptor_iterator_new(&iter, ctx) == DC_STATUS_SUCCESS else {
-      reject("desc_iter", "iterator failed", nil); return
-    }
-    while dc_iterator_next(iter, &desc) == DC_STATUS_SUCCESS {
-      let name = String(cString: dc_descriptor_get_product(desc))
-      if name.lowercased().contains("peregrine") || name.lowercased().contains("petrel") { break }
-      dc_descriptor_free(desc); desc = nil
-    }
-    dc_iterator_free(iter)
-    guard desc != nil else { reject("no_desc", "no Shearwater descriptor", nil); return }
+If by end of day 4 you do not have a non-empty blob saved out of the test harness, **stop coding** and document what blocks you in `spike/0c-ble-protocol/findings.md` (Task C4). At that point we fall back to **DB-import as v1 ingestion** and revisit BLE for v1.5. **The spike has done its job either way** — we either know BLE works, or know exactly what blocks it.
 
-    // Open BLE iostream. If this returns DC_STATUS_UNSUPPORTED on iOS, abort to PATH 2.
-    let addr = String(bleAddress)
-    let openStatus = dc_iostream_open(&io, ctx, desc, addr, DC_TRANSPORT_BLE)
-    guard openStatus == DC_STATUS_SUCCESS else {
-      reject("ble_open", "dc_iostream_open BLE returned \(openStatus). If UNSUPPORTED, switch to PATH 2.", nil); return
-    }
-
-    guard dc_device_open(&dev, ctx, desc, io) == DC_STATUS_SUCCESS else {
-      reject("dev_open", "dc_device_open failed", nil); return
-    }
-
-    // Collect dives. Use foreach with a context pointer holding a Swift array.
-    final class Collector { var dives: [[String: Any]] = [] }
-    let collector = Collector()
-    let collectorPtr = Unmanaged.passUnretained(collector).toOpaque()
-
-    let cb: dc_dive_callback_t = { (data, size, fingerprint, fsize, userdata) -> Int32 in
-      guard let userdata = userdata else { return 0 }
-      let collector = Unmanaged<Collector>.fromOpaque(userdata).takeUnretainedValue()
-      // Parse the dive: dc_parser_new + dc_parser_set_data + dc_parser_get_field +
-      // dc_parser_samples_foreach. Push each dive's metadata + samples to collector.dives.
-      // (See dctool/output_xml.c in libdivecomputer source for a worked example.)
-      collector.dives.append(["sample_bytes": Int(size)])  // placeholder until parser is wired
-      return 1
-    }
-
-    let foreachStatus = dc_device_foreach(dev, cb, collectorPtr)
-    guard foreachStatus == DC_STATUS_SUCCESS else {
-      reject("foreach", "dc_device_foreach failed", nil); return
-    }
-
-    let jsonData = try? JSONSerialization.data(withJSONObject: ["dives": collector.dives])
-    let jsonStr = jsonData.flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-    resolve(jsonStr)
-  }
-}
-```
-
-This compiles and connects. The callback body (`cb`) is where you actually parse samples — use libdivecomputer's `dc_parser_*` API. The reference is `dctool/output_xml.c` in the libdivecomputer source you cloned in Phase B; copy its sample-iteration loop and translate XML emission to dictionary append.
-
-**PATH 2 skeleton (CoreBluetooth + libdivecomputer parser).** If `dc_iostream_open` with `DC_TRANSPORT_BLE` returns `DC_STATUS_UNSUPPORTED`, scrap the PATH 1 code and instead:
-1. Implement `CBCentralManager` in Swift to scan, connect to the BLE address, discover Shearwater services and characteristics, accumulate raw bytes from the dive-data characteristic.
-2. Once you have the byte buffer, call libdivecomputer's parser API: `dc_parser_new_from_data(&parser, ctx, desc, bytes, len)`, then iterate samples with `dc_parser_samples_foreach`.
-
-**Time-box this task: 2 days max.** If you cannot get a real dive flowing through by then, document the exact blocker in findings and STOP. The spike has done its job — it has surfaced the obstacle.
-
-- [ ] **Step 4: Run on phone with Peregrine nearby**
-
-USER ACTION: turn on Peregrine, ensure not connected to Shearwater Cloud (only one BLE master).
-
-```bash
-cd spike/0c-rn-spike
-npx react-native run-ios --device
-```
-
-In the app: paste BLE address (from Phase B), tap downloadOneDive.
-
-Expected: JSON containing samples from a real dive in your phone screen's output box. Save the JSON to a file in `sample-output/` (gitignored).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add spike/0c-rn-spike/ios/DiveComputer.swift spike/0c-rn-spike/ios/LibDC.h spike/0c-rn-spike/ios/RNSpike-Bridging-Header.h
-git commit -m "spike(C): real libdivecomputer integration in native module"
-```
-
----
-
-### Task C6: Document Phase C findings
+### Task C3: Verify downloaded bytes parse identically to DB-extracted bytes
 
 **Files:**
-- Create: `spike/0c-rn-spike/findings.md`
+- Create: `spike/0c-ble-protocol/verify.sh`
 
-- [ ] **Step 1: Write `findings.md` with what worked, what didn't, time spent**
+- [ ] **Step 1: Write the verifier**
+
+`spike/0c-ble-protocol/verify.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+DCTOOL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/0b-desktop-harness/build/install/bin/dctool"
+INPUT="${1:-/tmp/dive-blobs/c2-downloaded.bin}"
+OUT="$(dirname "$INPUT")/c2-parsed.xml"
+"$DCTOOL" -d "Shearwater Peregrine" parse -u metric -o "$OUT" "$INPUT"
+echo "Parsed: $OUT ($(wc -c < "$OUT") bytes)"
+echo "Compare against the corresponding DB-extracted dive at:"
+echo "  /Users/mzmmoazam/Documents/Projects/diveForge/spike/0a-uddf-inspection/parsed/dive-<N>.xml"
+```
+
+```bash
+chmod +x spike/0c-ble-protocol/verify.sh
+```
+
+- [ ] **Step 2: Run the verifier on the C2 output**
+
+```bash
+spike/0c-ble-protocol/verify.sh /tmp/dive-blobs/c2-downloaded.bin
+```
+
+Expected: `dctool` parses successfully (exit 0, non-empty XML).
+
+- [ ] **Step 3: Diff against DB-extracted equivalent**
+
+Find the same dive number in `spike/0a-uddf-inspection/parsed/dive-<N>.xml` (whichever dive you picked in C2) and diff:
+
+```bash
+diff /tmp/dive-blobs/c2-parsed.xml spike/0a-uddf-inspection/parsed/dive-<N>.xml | head -40
+```
+
+Expected: zero diff, or only differences in fields we know vary between transports (datetime parsing differences, header bookkeeping). Sample data should match exactly.
+
+If the diff shows real differences in samples (different depth values, different sample count), that is a finding — capture it in C4. The most likely cause is incorrect framing in C2.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add spike/0c-ble-protocol/verify.sh
+git commit -m "spike(C3): byte-level verifier comparing BLE-downloaded vs DB-extracted"
+```
+
+### Task C4: Document Phase C findings
+
+**Files:**
+- Create: `spike/0c-ble-protocol/findings.md`
+
+- [ ] **Step 1: Write `findings.md`**
+
+Use this template, fill in real observations:
 
 ```markdown
-# Phase C findings — RN TurboModule + iOS
+# Phase C findings — Peregrine BLE on CoreBluetooth (pure Swift)
 
-## Build chain
-- iOS arm64 static libdivecomputer build: [success / failure + reason]
-- Xcode integration friction: [list]
-- BLE permission flow: [smooth / issues]
+## Outcome
+[ONE of: "Working — BLE→bytes→libdc-parse→XML proven on iPhone with real Peregrine" / "Partial — connection works but X" / "Blocked — specific reason"]
 
-## Native module
-- Path taken: [PATH 1 (libdc BLE on iOS) / PATH 2 (CoreBluetooth + libdc parser)]
-- Reason: [why this path]
-- Lines of native code written: [approx N]
+## Time spent
+- C1 (research): [hours]
+- C2 (Swift implementation): [days]
+- C3 (verify): [hours]
 
-## End-to-end test
-- Real dive successfully downloaded to phone: [yes / no]
-- JSON sample committed: [path or "not committed (PII)"]
-- Time per dive download: [seconds]
-- Reliability: [first-try / required X retries]
+## What works
+- [list what's confirmed working]
 
-## Spec / Plan 3 implications
-- Recommended approach for Plan 3: [PATH 1 / PATH 2 / unsolved]
-- Estimated production effort beyond this spike: [days]
-- Android risk: [low / medium / high — why]
-- Any spec changes needed: [list]
+## What didn't work / surprises
+- [list]
 
-## Blockers (if any)
-- [list anything you couldn't resolve in the time-box]
+## GATT layer (confirmed values from C2)
+- Service UUID:
+- Characteristic UUIDs (write/read/notify):
+- MTU:
+- Notes on framing / packet sizes:
+
+## Wire protocol (confirmed sequences)
+- Connection handshake: [bytes / status]
+- Dive-list: [bytes / status]
+- Dive-download for one dive: [bytes / status]
+- End-of-transmission detection: [how]
+
+## Diff vs DB-extracted parsing
+- Identical samples: [yes/no]
+- Field differences: [list any]
+- Conclusion: BLE-downloaded bytes are parser-equivalent to DB-extracted bytes: [yes/no/partial]
+
+## Recommendation for Plan 3 (BLE in production RN app)
+- Wrap C2's Swift class as a TurboModule: [estimated effort]
+- Android port: [estimated effort, key risks]
+- Robustness items still needed in production: [pairing UX, retry/backoff, partial-download recovery, …]
+
+## If outcome is Blocked
+- Specific blocker(s): [list]
+- What was tried: [list]
+- Recommended fallback: [DB-import in v1, defer BLE — or specific path forward]
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-cd ../..
-git add spike/0c-rn-spike/findings.md
-git commit -m "spike(C): document RN+iOS native module findings"
+git add spike/0c-ble-protocol/findings.md
+git commit -m "spike(C): document pure-Swift CoreBluetooth findings"
 ```
 
 ---
-
 ## Phase D — Final findings + spec amendments (1 hour)
 
 ### Task D1: Write the consolidated findings report
