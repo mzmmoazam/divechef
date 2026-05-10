@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { parseDiveBytes } from "@/lib/dctool-parser";
+import { parseShearwaterDive } from "@/lib/shearwater-parser";
 import { scoreDive, SCORING_VERSION } from "@divechef/shared";
 import type { DiveSampleInput } from "@divechef/shared";
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
 
       if (body.rawBase64) {
-        // Mobile BLE path: store raw dive data with minimal metadata
+        // Mobile BLE path: parse raw Shearwater dive data
         const externalId = (body.fingerprintHex as string) ?? `addr-${body.address}`;
 
         // Idempotency check
@@ -90,24 +91,64 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Store with placeholder values — real parsing will come via background job
+        const rawBytes = Buffer.from(body.rawBase64 as string, "base64");
+        const parsed = parseShearwaterDive(rawBytes);
+
+        const scoreResult = scoreDive(
+          {
+            maxDepthM: parsed.maxDepthM,
+            avgDepthM: parsed.avgDepthM,
+            durationSec: parsed.durationSec,
+            maxAscentRateMps: parsed.maxAscentRateMps,
+            minWaterTempC: parsed.minWaterTempC,
+            niveau: user.niveau,
+          },
+          parsed.samples
+        );
+
         const dive = await prisma.dive.create({
           data: {
             userId: user.id,
             externalId,
-            startedAt: new Date(),
-            durationSec: 0,
-            maxDepthM: 0,
-            avgDepthM: 0,
-            minWaterTempC: null,
-            maxAscentRateMps: 0,
+            startedAt: parsed.startedAt,
+            durationSec: parsed.durationSec,
+            maxDepthM: parsed.maxDepthM,
+            avgDepthM: parsed.avgDepthM,
+            minWaterTempC: parsed.minWaterTempC,
+            maxAscentRateMps: parsed.maxAscentRateMps,
+            safetyScore: scoreResult.score,
+            scoredAt: new Date(),
+            scoringVersion: SCORING_VERSION,
             rawBase64: body.rawBase64 as string,
+            samples: {
+              createMany: {
+                data: parsed.samples.map((s) => ({
+                  tSec: s.tSec,
+                  depthM: s.depthM,
+                  tempC: s.tempC,
+                  cnsPct: s.cnsPct,
+                  decoState: s.decoState,
+                  decoTimeSec: s.decoTimeSec,
+                  decoDepthM: s.decoDepthM,
+                  ttsSec: s.ttsSec,
+                })),
+              },
+            },
+            insights: {
+              createMany: {
+                data: scoreResult.insights.map((i) => ({
+                  ruleId: i.ruleId,
+                  severity: i.severity,
+                  evidence: i.evidence as object,
+                })),
+              },
+            },
           },
           include: { insights: true },
         });
 
         return NextResponse.json(
-          { dive, insights: dive.insights, score: null },
+          { dive, insights: dive.insights, score: scoreResult.score },
           { status: 201 }
         );
       } else {
