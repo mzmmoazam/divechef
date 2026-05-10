@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@diveforge/shared": "workspace:*",
@@ -38,6 +40,7 @@
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.73.0",
     "jest": "^30.4.2",
+    "jest-expo": "^55.0.17",
     "ts-jest": "^29.4.9",
     "typescript": "~5.9.2"
   }
