@@ -5,10 +5,7 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
@@ -19,8 +16,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://diveforge-preview.vercel.app",
-        "EXPO_PUBLIC_USE_REAL_BLE": "false"
+        "EXPO_PUBLIC_API_URL": "https://diveforge-preview.vercel.app"
       }
     },
     "production": {
@@ -32,8 +28,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://diveforge.vercel.app",
-        "EXPO_PUBLIC_USE_REAL_BLE": "false"
+        "EXPO_PUBLIC_API_URL": "https://diveforge.vercel.app"
       }
     }
   }
