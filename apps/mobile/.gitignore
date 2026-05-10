@@ -36,6 +36,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated native folders (expo prebuild output)
+/ios/*
+!/ios/DiveComputer
 /android
