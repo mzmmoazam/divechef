@@ -1,0 +1,151 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "logout": "Logout",
+    "ok": "OK"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "loginButton": "Log in",
+    "signupButton": "Create account",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "onboarding": {
+    "welcome": "Welcome to DiveForge",
+    "subtitle": "Personal dive intelligence",
+    "pickNiveau": "What is your certification level?",
+    "pickLanguage": "App language",
+    "disclaimer": "DiveForge is a feedback tool. It does not replace your training, dive computer, or instructor. Thresholds are based on FFESSM/MN90 norms and must be verified by a professional.",
+    "acceptDisclaimer": "I accept",
+    "blePermission": "DiveForge needs Bluetooth access to communicate with your dive computer.",
+    "grantBle": "Grant Bluetooth access"
+  },
+  "sync": {
+    "title": "Sync",
+    "scanning": "Searching for your dive computer...",
+    "connecting": "Connecting to {{deviceName}}...",
+    "downloading": "Downloading dives ({{received}}/{{expected}})...",
+    "complete": "{{count}} dive(s) synced",
+    "noDevice": "No dive computer found",
+    "retryButton": "Retry",
+    "permissionDenied": "Bluetooth access denied. Check your device settings.",
+    "openSettings": "Open Settings",
+    "connectionLost": "Connection lost. Previously synced dives are saved.",
+    "partialSuccess": "{{synced}} of {{total}} dive(s) synced. Retry for the rest."
+  },
+  "home": {
+    "title": "Home",
+    "lastDive": "Last dive",
+    "noDives": "No dives yet. Sync your dive computer to get started.",
+    "syncButton": "Sync",
+    "score": "Score: {{score}}/100",
+    "depth": "{{depth}} m",
+    "duration": "{{duration}} min"
+  },
+  "detail": {
+    "title": "Dive Detail",
+    "date": "Date",
+    "duration": "Duration",
+    "maxDepth": "Max depth",
+    "avgDepth": "Avg depth",
+    "temp": "Min temperature",
+    "score": "Safety score",
+    "scoreValue": "{{score}}/100",
+    "insights": "Insights",
+    "depthProfile": "Depth profile",
+    "noInsights": "No alerts for this dive.",
+    "disclaimer": "DiveForge is a feedback tool, not a medical device."
+  },
+  "trends": {
+    "title": "Trends",
+    "period": "Last 30 days",
+    "avgScore": "Average score",
+    "avgDepth": "Average depth",
+    "diveCount": "Dive count",
+    "scoreTrend": "Score trend",
+    "noData": "Not enough data. Sync your dives."
+  },
+  "profile": {
+    "title": "Profile",
+    "email": "Email",
+    "niveau": "Certification level",
+    "locale": "Language",
+    "connectedDevice": "Connected device",
+    "noDevice": "No device",
+    "syncButton": "Sync",
+    "logoutButton": "Log out"
+  },
+  "queue": {
+    "pending": "Pending sync",
+    "pendingCount": "{{count}} dive(s) awaiting upload"
+  },
+  "niveau": {
+    "N1": "Level 1",
+    "N2": "Level 2",
+    "N3": "Level 3",
+    "N4": "Level 4",
+    "INITIATEUR": "Instructor",
+    "MF1": "MF1",
+    "MF2": "MF2",
+    "UNKNOWN": "Not specified"
+  },
+  "insights": {
+    "ascent_too_fast": {
+      "title": "Fast ascent",
+      "body": "You ascended at {{maxRateMpm}} m/min between {{startSec}}s and {{endSec}}s. MN90 norm: 15 m/min."
+    },
+    "ascent_dangerous": {
+      "title": "Dangerous ascent",
+      "body": "Ascent rate of {{maxRateMpm}} m/min sustained over 60s. Risk of decompression sickness."
+    },
+    "final_ascent_too_fast": {
+      "title": "Fast final ascent",
+      "body": "Ascent from 6m to surface at {{rateMpm}} m/min. Recommended: under 6 m/min in this zone."
+    },
+    "palier_securite_manque": {
+      "title": "Safety stop missing",
+      "body": "Max depth {{maxDepthM}} m with no safety stop (3-5m for 3 min). Recommended for any dive beyond 6m."
+    },
+    "palier_securite_court": {
+      "title": "Short safety stop",
+      "body": "Safety stop of {{actualSec}}s instead of the recommended 180s."
+    },
+    "palier_deco_manque": {
+      "title": "Missed deco stop",
+      "body": "Required deco stop at {{decoDepthM}} m for {{decoTimeSec}}s was not completed. Immediate DCS risk."
+    },
+    "profondeur_depasse_niveau_leger": {
+      "title": "Slightly exceeded depth limit",
+      "body": "Max depth {{maxDepthM}} m. Limit for your level ({{niveau}}): {{limitM}} m."
+    },
+    "profondeur_depasse_niveau_grave": {
+      "title": "Severely exceeded depth limit",
+      "body": "Max depth {{maxDepthM}} m, exceeding your level ({{niveau}}) limit by {{excessM}} m."
+    },
+    "temperature_basse": {
+      "title": "Cold water",
+      "body": "Min temperature {{minTempC}} C over {{durationMin}} min. Cold increases air consumption and narcosis risk."
+    },
+    "plongee_profonde": {
+      "title": "Deep dive",
+      "body": "Maximum depth reached: {{maxDepthM}} m. Informational only."
+    }
+  },
+  "summaryTips": {
+    "improving_ascent_control": "Your ascent rates are improving. Keep monitoring your computer at end of dive.",
+    "consistent_safety_stops": "Your safety stops are consistent. Excellent safety habit.",
+    "depth_management_improving": "Your depth management is improving. Stay mindful of your level limits.",
+    "overall_good": "Your dives follow good practices. Keep it up!",
+    "needs_attention": "Several recent alerts. Review the flagged dives and consult your instructor if needed."
+  }
+}

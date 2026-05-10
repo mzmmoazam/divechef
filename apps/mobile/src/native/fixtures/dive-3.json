@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "deviceModel": "Shearwater Peregrine",
+    "deviceSerial": "MOCK-001",
+    "externalId": "mock-dive-3",
+    "startedAt": "2025-03-16T10:15:00Z"
+  },
+  "dive": {
+    "startedAt": "2025-03-16T10:15:00Z",
+    "durationSec": 2700,
+    "maxDepthM": 32.0,
+    "avgDepthM": 22.4,
+    "minWaterTempC": 22.0,
+    "maxAscentRateMps": 0.22
+  },
+  "samples": [
+    { "tSec": 0, "depthM": 0.0, "tempC": 24.0, "cnsPct": 0, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 90, "depthM": 10.5, "tempC": 23.2, "cnsPct": 2, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 240, "depthM": 25.0, "tempC": 22.5, "cnsPct": 5, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 480, "depthM": 32.0, "tempC": 22.0, "cnsPct": 9, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 900, "depthM": 31.5, "tempC": 22.0, "cnsPct": 15, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1200, "depthM": 30.8, "tempC": 22.1, "cnsPct": 20, "decoState": "deco", "decoTimeSec": 60, "decoDepthM": 6, "ttsSec": 180 },
+    { "tSec": 1500, "depthM": 28.2, "tempC": 22.2, "cnsPct": 24, "decoState": "deco", "decoTimeSec": 120, "decoDepthM": 6, "ttsSec": 300 },
+    { "tSec": 1800, "depthM": 20.0, "tempC": 22.5, "cnsPct": 27, "decoState": "deco", "decoTimeSec": 180, "decoDepthM": 6, "ttsSec": 360 },
+    { "tSec": 2100, "depthM": 12.0, "tempC": 23.0, "cnsPct": 29, "decoState": "deco", "decoTimeSec": 120, "decoDepthM": 3, "ttsSec": 240 },
+    { "tSec": 2400, "depthM": 6.0, "tempC": 23.5, "cnsPct": 30, "decoState": "deco", "decoTimeSec": 60, "decoDepthM": 3, "ttsSec": 120 },
+    { "tSec": 2580, "depthM": 3.0, "tempC": 23.8, "cnsPct": 31, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 2700, "depthM": 0.0, "tempC": 24.0, "cnsPct": 31, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "deviceModel": "Shearwater Peregrine",
+    "deviceSerial": "MOCK-001",
+    "externalId": "mock-dive-5",
+    "startedAt": "2025-03-18T08:45:00Z"
+  },
+  "dive": {
+    "startedAt": "2025-03-18T08:45:00Z",
+    "durationSec": 1680,
+    "maxDepthM": 42.0,
+    "avgDepthM": 28.5,
+    "minWaterTempC": 16.0,
+    "maxAscentRateMps": 0.38
+  },
+  "samples": [
+    { "tSec": 0, "depthM": 0.0, "tempC": 19.0, "cnsPct": 0, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 60, "depthM": 12.0, "tempC": 18.0, "cnsPct": 2, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 180, "depthM": 30.0, "tempC": 17.0, "cnsPct": 6, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 300, "depthM": 42.0, "tempC": 16.0, "cnsPct": 12, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 480, "depthM": 40.5, "tempC": 16.0, "cnsPct": 18, "decoState": "deco", "decoTimeSec": 120, "decoDepthM": 9, "ttsSec": 420 },
+    { "tSec": 720, "depthM": 38.0, "tempC": 16.2, "cnsPct": 24, "decoState": "deco", "decoTimeSec": 180, "decoDepthM": 9, "ttsSec": 540 },
+    { "tSec": 960, "depthM": 25.0, "tempC": 17.0, "cnsPct": 28, "decoState": "deco", "decoTimeSec": 240, "decoDepthM": 6, "ttsSec": 480 },
+    { "tSec": 1140, "depthM": 15.0, "tempC": 17.5, "cnsPct": 31, "decoState": "deco", "decoTimeSec": 180, "decoDepthM": 6, "ttsSec": 360 },
+    { "tSec": 1320, "depthM": 9.0, "tempC": 18.0, "cnsPct": 33, "decoState": "deco", "decoTimeSec": 120, "decoDepthM": 3, "ttsSec": 240 },
+    { "tSec": 1500, "depthM": 5.0, "tempC": 18.5, "cnsPct": 34, "decoState": "deco", "decoTimeSec": 60, "decoDepthM": 3, "ttsSec": 120 },
+    { "tSec": 1620, "depthM": 3.0, "tempC": 18.8, "cnsPct": 35, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null },
+    { "tSec": 1680, "depthM": 0.0, "tempC": 19.0, "cnsPct": 35, "decoState": "ndl", "decoTimeSec": 0, "decoDepthM": 0, "ttsSec": null }
+  ]
+}
