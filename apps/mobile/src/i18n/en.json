@@ -21,13 +21,13 @@
     "passwordMismatch": "Passwords do not match"
   },
   "onboarding": {
-    "welcome": "Welcome to DiveForge",
+    "welcome": "Welcome to DiveChef",
     "subtitle": "Personal dive intelligence",
     "pickNiveau": "What is your certification level?",
     "pickLanguage": "App language",
-    "disclaimer": "DiveForge is a feedback tool. It does not replace your training, dive computer, or instructor. Thresholds are based on FFESSM/MN90 norms and must be verified by a professional.",
+    "disclaimer": "DiveChef is a feedback tool. It does not replace your training, dive computer, or instructor. Thresholds are based on FFESSM/MN90 norms and must be verified by a professional.",
     "acceptDisclaimer": "I accept",
-    "blePermission": "DiveForge needs Bluetooth access to communicate with your dive computer.",
+    "blePermission": "DiveChef needs Bluetooth access to communicate with your dive computer.",
     "grantBle": "Grant Bluetooth access"
   },
   "sync": {
@@ -64,7 +64,7 @@
     "insights": "Insights",
     "depthProfile": "Depth profile",
     "noInsights": "No alerts for this dive.",
-    "disclaimer": "DiveForge is a feedback tool, not a medical device."
+    "disclaimer": "DiveChef is a feedback tool, not a medical device."
   },
   "trends": {
     "title": "Trends",

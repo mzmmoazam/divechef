@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const TOKEN_KEY = 'diveforge_jwt';
+const TOKEN_KEY = 'divechef_jwt';
 
 export async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(TOKEN_KEY);

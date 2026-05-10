@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { User, Niveau, Locale } from '@diveforge/shared/types';
+import type { User, Niveau, Locale } from '@divechef/shared/types';
 import * as authService from '../services/auth';
 import { getToken, clearToken } from '../services/token';
 import { onAuthRevoked } from '../services/authEvents';

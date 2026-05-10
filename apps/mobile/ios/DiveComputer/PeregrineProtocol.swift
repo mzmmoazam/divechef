@@ -1,6 +1,6 @@
 // Ported from spike/0c-ble-protocol/swift-sources/PeregrineProtocol.swift
 // PeregrineProtocol.swift
-// DiveForge spike — Phase C2 Layer 3 (Shearwater wire protocol).
+// DiveChef spike — Phase C2 Layer 3 (Shearwater wire protocol).
 //
 // Pure byte-manipulation helpers, no CoreBluetooth dependency. Translates
 // libdivecomputer's shearwater_common.c flow into Swift.

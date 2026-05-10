@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-const DB_NAME = 'diveforge_queue.db';
+const DB_NAME = 'divechef_queue.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
 

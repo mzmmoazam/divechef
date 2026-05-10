@@ -6,7 +6,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@diveforge/shared/*": ["../../packages/shared/*"]
+      "@divechef/shared/*": ["../../packages/shared/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "src/**/*"],

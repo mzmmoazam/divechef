@@ -1,6 +1,6 @@
 import { api } from './api';
 import { setToken, clearToken } from './token';
-import type { User, Niveau, Locale } from '@diveforge/shared/types';
+import type { User, Niveau, Locale } from '@divechef/shared/types';
 
 interface AuthResponse {
   token: string;

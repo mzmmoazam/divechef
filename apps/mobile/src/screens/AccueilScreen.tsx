@@ -7,7 +7,7 @@ import { useDiveList } from '../hooks/useDives';
 import { LastDiveCard } from '../components/LastDiveCard';
 import { DiveListItem } from '../components/DiveListItem';
 import { QueueBanner } from '../components/QueueBanner';
-import type { DiveSummary } from '@diveforge/shared/types';
+import type { DiveSummary } from '@divechef/shared/types';
 import type { RootStackParamList } from '../navigation/types';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;

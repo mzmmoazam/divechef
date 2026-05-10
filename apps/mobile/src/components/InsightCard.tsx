@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import type { Insight, Severity } from '@diveforge/shared/types';
+import type { Insight, Severity } from '@divechef/shared/types';
 
 interface InsightCardProps {
   insight: Insight;

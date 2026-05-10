@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import i18n from '../i18n';
-import type { Niveau, Locale } from '@diveforge/shared/types';
+import type { Niveau, Locale } from '@divechef/shared/types';
 import type { RootStackParamList } from '../navigation/types';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;

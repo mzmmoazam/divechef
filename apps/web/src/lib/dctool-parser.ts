@@ -8,7 +8,7 @@ import { writeFile, readFile, unlink, mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
-import type { DiveSampleInput } from "@diveforge/shared";
+import type { DiveSampleInput } from "@divechef/shared";
 
 const execFileAsync = promisify(execFile);
 
@@ -121,7 +121,7 @@ function parseXmlOutput(xml: string): DctoolParseResult {
 export async function parseDiveBytes(
   rawBytes: Buffer
 ): Promise<DctoolParseResult> {
-  const tmpDir = await mkdtemp(join(tmpdir(), "diveforge-"));
+  const tmpDir = await mkdtemp(join(tmpdir(), "divechef-"));
   const inPath = join(tmpDir, "raw.bin");
   const outPath = join(tmpDir, "parsed.xml");
 

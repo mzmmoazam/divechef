@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import type { Niveau, Locale } from "@diveforge/shared";
+import type { Niveau, Locale } from "@divechef/shared";
 import { Niveau as PrismaNiveau } from "@prisma/client";
 
 const VALID_NIVEAUX: Niveau[] = [

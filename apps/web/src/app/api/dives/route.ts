@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { parseDiveBytes } from "@/lib/dctool-parser";
-import { scoreDive, SCORING_VERSION } from "@diveforge/shared";
-import type { DiveSampleInput } from "@diveforge/shared";
+import { scoreDive, SCORING_VERSION } from "@divechef/shared";
+import type { DiveSampleInput } from "@divechef/shared";
 
 interface DiveMeta {
   deviceModel: string;

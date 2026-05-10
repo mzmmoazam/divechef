@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
-import type { Dive, DiveSummary, DiveSample, Insight } from '@diveforge/shared/types';
+import type { Dive, DiveSummary, DiveSample, Insight } from '@divechef/shared/types';
 
 export function useDiveList(limit = 20) {
   return useInfiniteQuery({

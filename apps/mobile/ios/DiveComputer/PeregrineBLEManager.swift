@@ -1,5 +1,5 @@
 // PeregrineBLEManager.swift
-// DiveForge — Production BLE layer for Shearwater Peregrine dive computers.
+// DiveChef — Production BLE layer for Shearwater Peregrine dive computers.
 //
 // Adapted from spike/0c-ble-protocol/swift-sources/PeregrineClient.swift.
 // Removes SwiftUI/Combine dependencies, logging, auto-connect behavior.
@@ -49,7 +49,7 @@ final class PeregrineBLEManager: NSObject {
     private var scanServiceUUID: CBUUID?
 
     /// Serial queue for thread-safety. All state mutations and CB delegate work happen here.
-    private let queue = DispatchQueue(label: "com.diveforge.peregrine-ble", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.divechef.peregrine-ble", qos: .userInitiated)
 
     /// Discovered peripherals cache (for connect-by-identifier).
     private var discoveredPeripherals: [String: CBPeripheral] = [:]

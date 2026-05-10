@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
 import { useAuth } from '../hooks/useAuth';
 import type { AuthScreenProps } from '../navigation/types';
-import type { Niveau, Locale } from '@diveforge/shared/types';
+import type { Niveau, Locale } from '@divechef/shared/types';
 
 const NIVEAUX: Niveau[] = ['N1', 'N2', 'N3', 'N4', 'INITIATEUR', 'MF1', 'MF2'];
 

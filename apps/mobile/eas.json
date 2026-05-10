@@ -16,7 +16,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://diveforge-preview.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://divechef-preview.vercel.app"
       }
     },
     "production": {
@@ -28,7 +28,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://diveforge.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://divechef.vercel.app"
       }
     }
   }

@@ -1,5 +1,5 @@
 {
-  "name": "@diveforge/web",
+  "name": "@divechef/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
-    "@diveforge/shared": "workspace:*",
+    "@divechef/shared": "workspace:*",
     "@prisma/client": "^6.19.3",
     "@sentry/nextjs": "^10.52.0",
     "bcryptjs": "^3.0.3",

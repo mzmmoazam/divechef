@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DiveForge",
-    "slug": "diveforge",
+    "name": "DiveChef",
+    "slug": "divechef",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,13 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.diveforge.app",
+      "bundleIdentifier": "com.divechef.app",
       "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "DiveForge needs Bluetooth to communicate with your dive computer."
+        "NSBluetoothAlwaysUsageDescription": "DiveChef needs Bluetooth to communicate with your dive computer."
       }
     },
     "android": {
-      "package": "com.diveforge.app",
+      "package": "com.divechef.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

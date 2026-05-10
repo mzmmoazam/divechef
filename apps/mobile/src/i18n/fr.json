@@ -21,13 +21,13 @@
     "passwordMismatch": "Les mots de passe ne correspondent pas"
   },
   "onboarding": {
-    "welcome": "Bienvenue sur DiveForge",
+    "welcome": "Bienvenue sur DiveChef",
     "subtitle": "Intelligence de plongee personnelle",
     "pickNiveau": "Quel est votre niveau ?",
     "pickLanguage": "Langue de l'application",
-    "disclaimer": "DiveForge est un outil de feedback. Il ne remplace ni votre formation, ni votre ordinateur de plongee, ni votre moniteur. Les seuils sont bases sur les normes FFESSM/MN90 et doivent etre verifies par un professionnel.",
+    "disclaimer": "DiveChef est un outil de feedback. Il ne remplace ni votre formation, ni votre ordinateur de plongee, ni votre moniteur. Les seuils sont bases sur les normes FFESSM/MN90 et doivent etre verifies par un professionnel.",
     "acceptDisclaimer": "J'accepte",
-    "blePermission": "DiveForge a besoin du Bluetooth pour communiquer avec votre ordinateur de plongee.",
+    "blePermission": "DiveChef a besoin du Bluetooth pour communiquer avec votre ordinateur de plongee.",
     "grantBle": "Autoriser le Bluetooth"
   },
   "sync": {
@@ -64,7 +64,7 @@
     "insights": "Analyses",
     "depthProfile": "Profil de profondeur",
     "noInsights": "Aucune alerte pour cette plongee.",
-    "disclaimer": "DiveForge est un outil de feedback, pas un dispositif medical."
+    "disclaimer": "DiveChef est un outil de feedback, pas un dispositif medical."
   },
   "trends": {
     "title": "Tendances",
