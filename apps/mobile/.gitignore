@@ -39,4 +39,19 @@ yarn-error.*
 # generated native folders (expo prebuild output)
 /ios/*
 !/ios/DiveComputer
-/android
+/android/*
+!/android/app
+/android/app/*
+!/android/app/src
+/android/app/src/*
+!/android/app/src/main
+/android/app/src/main/*
+!/android/app/src/main/java
+/android/app/src/main/java/*
+!/android/app/src/main/java/com
+/android/app/src/main/java/com/*
+!/android/app/src/main/java/com/diveforge
+/android/app/src/main/java/com/diveforge/*
+!/android/app/src/main/java/com/diveforge/ble
+!/android/app/src/main/java/com/diveforge/app
+!/android/app/src/main/AndroidManifest.xml
