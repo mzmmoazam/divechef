@@ -1,5 +1,4 @@
 import Foundation
-import React
 
 @objc(DiveComputer)
 class DiveComputerModule: RCTEventEmitter {
@@ -26,8 +25,8 @@ class DiveComputerModule: RCTEventEmitter {
         }
         m.onProgress = { [weak self] label, bytesDownloaded in
             let body: [String: Any] = [
-                "bytesReceived": bytesDownloaded,
-                "bytesExpected": NSNull(),
+                "label": label,
+                "bytesDownloaded": bytesDownloaded,
             ]
             self?.sendEvent(withName: "diveComputerProgress", body: body)
         }

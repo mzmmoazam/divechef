@@ -72,11 +72,50 @@ export async function POST(req: NextRequest) {
       };
       samples = parsed.samples;
     } else {
-      // Dev-mode JSON path
       const body = await req.json();
-      meta = body.meta as DiveMeta;
-      diveData = body.dive as DiveData;
-      samples = body.samples as DiveSampleInput[];
+
+      if (body.rawBase64) {
+        // Mobile BLE path: store raw dive data with minimal metadata
+        const externalId = (body.fingerprintHex as string) ?? `addr-${body.address}`;
+
+        // Idempotency check
+        const existing = await prisma.dive.findUnique({
+          where: { userId_externalId: { userId: user.id, externalId } },
+          include: { insights: true },
+        });
+        if (existing) {
+          return NextResponse.json(
+            { dive: existing, insights: existing.insights, score: existing.safetyScore },
+            { status: 200 }
+          );
+        }
+
+        // Store with placeholder values — real parsing will come via background job
+        const dive = await prisma.dive.create({
+          data: {
+            userId: user.id,
+            externalId,
+            startedAt: new Date(),
+            durationSec: 0,
+            maxDepthM: 0,
+            avgDepthM: 0,
+            minWaterTempC: null,
+            maxAscentRateMps: 0,
+            rawBase64: body.rawBase64 as string,
+          },
+          include: { insights: true },
+        });
+
+        return NextResponse.json(
+          { dive, insights: dive.insights, score: null },
+          { status: 201 }
+        );
+      } else {
+        // Dev-mode JSON path
+        meta = body.meta as DiveMeta;
+        diveData = body.dive as DiveData;
+        samples = body.samples as DiveSampleInput[];
+      }
     }
 
     // Validate required meta fields

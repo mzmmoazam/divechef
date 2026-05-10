@@ -107,18 +107,20 @@ export function useSync() {
         const { rawBytes } = await DiveComputerNative.downloadDive(entry.index);
 
         setState('uploading');
-        // Decode base64 — atob is available in Hermes
-        const decoded = atob(rawBytes);
-        const parsed = JSON.parse(decoded) as unknown;
+        const payload = {
+          rawBase64: rawBytes,
+          fingerprintHex: entry.fingerprintHex,
+          address: entry.address,
+        };
 
         try {
-          await api.post('/api/dives', parsed, {
+          await api.post('/api/dives', payload, {
             headers: { 'Content-Type': 'application/json' },
           });
           synced++;
           setSyncedCount(synced);
         } catch {
-          await enqueueUpload(parsed);
+          await enqueueUpload(payload);
         }
 
         setState('downloading');

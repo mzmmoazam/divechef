@@ -60,6 +60,7 @@ model Dive {
   scoredAt         DateTime?
   scoringVersion   String?
   rawPayloadUrl    String?
+  rawBase64        String?
   samples          DiveSample[]
   insights         Insight[]
   createdAt        DateTime     @default(now())

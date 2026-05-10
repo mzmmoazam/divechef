@@ -1,7 +1,10 @@
 import { NativeModules } from 'react-native';
 import type { DiveComputerModule } from './DiveComputer';
 
-const USE_MOCK = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCK_BLE === 'true';
+const nativeModule = NativeModules.DiveComputer as DiveComputerModule | undefined;
+const USE_MOCK =
+  process.env.EXPO_PUBLIC_USE_MOCK_BLE === 'true' ||
+  (__DEV__ && !nativeModule);
 
 let module: DiveComputerModule;
 
@@ -12,7 +15,7 @@ if (USE_MOCK) {
   };
   module = DiveComputer;
 } else {
-  module = NativeModules.DiveComputer as DiveComputerModule;
+  module = nativeModule!;
 }
 
 export const DiveComputerNative: DiveComputerModule = module;

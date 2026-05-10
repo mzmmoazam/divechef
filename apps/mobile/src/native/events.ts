@@ -9,14 +9,17 @@ type DiveComputerEventMap = {
 
 type EventName = keyof DiveComputerEventMap;
 
-const USE_MOCK = __DEV__ && process.env.EXPO_PUBLIC_USE_MOCK_BLE === 'true';
+const nativeModule = NativeModules.DiveComputer;
+const USE_MOCK =
+  process.env.EXPO_PUBLIC_USE_MOCK_BLE === 'true' ||
+  (__DEV__ && !nativeModule);
 
 function getEventEmitter() {
   if (USE_MOCK) {
     const { mockEventTarget } = require('./DiveComputer.mock');
     return mockEventTarget;
   }
-  return new NativeEventEmitter(NativeModules.DiveComputer);
+  return new NativeEventEmitter(nativeModule);
 }
 
 const emitter = getEventEmitter();
