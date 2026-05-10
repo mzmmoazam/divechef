@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "DiveForge",
+    "slug": "diveforge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,9 +13,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.diveforge.app",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "DiveForge needs Bluetooth to communicate with your dive computer."
+      }
     },
     "android": {
+      "package": "com.diveforge.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
