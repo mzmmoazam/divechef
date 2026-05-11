@@ -129,6 +129,11 @@ export function useSync() {
       await DiveComputerNative.disconnect();
       setState('complete');
 
+      // Reprocess any dives that were stored before the parser was deployed
+      try {
+        await api.post('/api/dives/reprocess');
+      } catch {}
+
       queryClient.invalidateQueries({ queryKey: ['diveList'] });
       queryClient.invalidateQueries({ queryKey: ['trends'] });
     } catch (err: unknown) {

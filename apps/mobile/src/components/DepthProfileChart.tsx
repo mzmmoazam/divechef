@@ -10,18 +10,21 @@ interface DepthProfileChartProps {
 export function DepthProfileChart({ diveId }: DepthProfileChartProps) {
   const { data: samples, isLoading } = useDiveSamples(diveId);
 
-  if (isLoading || !samples || samples.length === 0) {
+  const chartData = useMemo(
+    () =>
+      samples && samples.length > 0
+        ? samples.map((s) => ({ timeMin: s.tSec / 60, depth: -s.depthM }))
+        : [],
+    [samples]
+  );
+
+  if (isLoading || chartData.length === 0) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="small" color="#0066cc" />
       </View>
     );
   }
-
-  const chartData = useMemo(
-    () => samples.map((s) => ({ timeMin: s.tSec / 60, depth: -s.depthM })),
-    [samples]
-  );
 
   return (
     <View style={styles.container}>

@@ -7,6 +7,7 @@ import { useDiveList } from '../hooks/useDives';
 import { LastDiveCard } from '../components/LastDiveCard';
 import { DiveListItem } from '../components/DiveListItem';
 import { QueueBanner } from '../components/QueueBanner';
+import { api } from '../services/api';
 import type { DiveSummary } from '@divechef/shared/types';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -27,6 +28,15 @@ export default function AccueilScreen() {
 
   const allDives: DiveSummary[] = data?.pages.flatMap((p) => p.dives) ?? [];
   const lastDive = allDives[0] ?? null;
+
+  const handleRefresh = useCallback(async () => {
+    // Reprocess any unparsed dives, then refresh the list
+    const hasUnparsed = allDives.some((d) => d.durationSec === 0 && d.maxDepthM === 0);
+    if (hasUnparsed) {
+      try { await api.post('/api/dives/reprocess'); } catch {}
+    }
+    refetch();
+  }, [allDives, refetch]);
 
   const handleDivePress = useCallback(
     (diveId: string) => {
@@ -95,7 +105,7 @@ export default function AccueilScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
           />
         }
         contentContainerStyle={allDives.length === 0 ? styles.emptyContainer : undefined}
