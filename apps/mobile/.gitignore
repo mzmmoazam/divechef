@@ -50,8 +50,8 @@ yarn-error.*
 /android/app/src/main/java/*
 !/android/app/src/main/java/com
 /android/app/src/main/java/com/*
-!/android/app/src/main/java/com/diveforge
-/android/app/src/main/java/com/diveforge/*
-!/android/app/src/main/java/com/diveforge/ble
-!/android/app/src/main/java/com/diveforge/app
+!/android/app/src/main/java/com/divechef
+/android/app/src/main/java/com/divechef/*
+!/android/app/src/main/java/com/divechef/ble
+!/android/app/src/main/java/com/divechef/app
 !/android/app/src/main/AndroidManifest.xml
