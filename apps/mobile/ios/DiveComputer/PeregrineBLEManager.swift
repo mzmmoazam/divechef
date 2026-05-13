@@ -70,6 +70,7 @@ final class PeregrineBLEManager: NSObject {
     // MARK: - Connect completion
 
     private var connectContinuation: CheckedContinuation<Void, Error>?
+    private var connectTimestamp: Date?
 
     // MARK: - Lifecycle
 
@@ -82,7 +83,11 @@ final class PeregrineBLEManager: NSObject {
 
     // MARK: - Public actions (Layer 2)
 
+    private static let scanTimeoutSec: TimeInterval = 15
+
     /// Start scanning for Peregrine peripherals. Discovered peripherals are reported via onDiscovered.
+    /// If no device is discovered within 15 seconds, emits a `diveComputerDisconnected` event
+    /// with reason `no_device_found`.
     func startScan(serviceUuid: String? = nil) {
         let uuid = serviceUuid.flatMap { CBUUID(string: $0) } ?? Self.serviceUUID
         scanServiceUUID = uuid
@@ -96,6 +101,15 @@ final class PeregrineBLEManager: NSObject {
             self.central.scanForPeripherals(withServices: [uuid], options: [
                 CBCentralManagerScanOptionAllowDuplicatesKey: false,
             ])
+
+            // Scan timeout: if no device found in 15s, notify JS.
+            self.queue.asyncAfter(deadline: .now() + Self.scanTimeoutSec) { [weak self] in
+                guard let self = self else { return }
+                if self.discoveredPeripherals.isEmpty && self.central.isScanning {
+                    self.central.stopScan()
+                    self.onDisconnected?("no_device_found")
+                }
+            }
         }
     }
 
@@ -173,13 +187,29 @@ final class PeregrineBLEManager: NSObject {
         let logupload = try await rdbi(id: Peregrine.ID_LOGUPLOAD, expectedLen: 9)
         let baseAddr = try LogbookFormat.baseAddress(fromLogUploadResponse: logupload)
 
-        // Download the manifest (uncompressed).
-        let manifestBlob = try await downloadBlob(
-            address: Peregrine.MANIFEST_ADDR,
-            size: Peregrine.MANIFEST_SIZE,
-            compression: false
-        )
-        let records = Manifest.parse(manifestBlob)
+        // Download the manifest (uncompressed). Loop pages for >48 dives.
+        // Per shearwater_petrel.c:308-310: if a page is full, fetch the next page.
+        var allRecords: [ManifestRecord] = []
+        var manifestAddr = Peregrine.MANIFEST_ADDR
+        let maxPages = 10 // Safety cap: 480 dives max
+
+        for _ in 0..<maxPages {
+            let manifestBlob = try await downloadBlob(
+                address: manifestAddr,
+                size: Peregrine.MANIFEST_SIZE,
+                compression: false
+            )
+            let pageRecords = Manifest.parse(manifestBlob)
+            allRecords.append(contentsOf: pageRecords)
+
+            let totalEntries = Int(manifestBlob.count) / Peregrine.RECORD_SIZE
+            if totalEntries >= Peregrine.RECORD_COUNT {
+                manifestAddr += Peregrine.MANIFEST_SIZE
+            } else {
+                break
+            }
+        }
+        let records = allRecords
 
         // Cache for downloadDive.
         self._baseAddr = baseAddr
@@ -193,6 +223,8 @@ final class PeregrineBLEManager: NSObject {
     }
 
     /// Download the dive at the given 1-based index. Returns raw decompressed bytes.
+    /// Supports partial-download recovery: if a previous attempt was interrupted, resumes
+    /// from the last successfully received block (in-memory state only).
     func downloadDive(at index: Int) async throws -> Data {
         guard isReady else { throw PeregrineProtocolError.notConnected }
         guard let baseAddr = _baseAddr else {
@@ -202,15 +234,23 @@ final class PeregrineBLEManager: NSObject {
             throw PeregrineProtocolError.unexpectedResponse("dive index \(index) not in manifest")
         }
 
+        let diveAddr = baseAddr + rec.address
         onProgress?("Starting dive \(index)...", 0)
 
-        // Compressed dive-body download.
-        let compressedBlob = try await downloadBlob(
-            address: baseAddr + rec.address,
-            size: Peregrine.DIVE_SIZE,
-            compression: true,
-            progressLabel: "dive \(index)"
-        )
+        let compressedBlob: Data
+        do {
+            compressedBlob = try await downloadBlobResumable(
+                index: index,
+                address: diveAddr,
+                size: Peregrine.DIVE_SIZE,
+                compression: true,
+                progressLabel: "dive \(index)"
+            )
+        } catch {
+            throw error
+        }
+
+        partialDownloads.removeValue(forKey: index)
 
         // Decompress: LRE + XOR.
         let decompressed = try Decompress.full(compressedBlob)
@@ -220,9 +260,92 @@ final class PeregrineBLEManager: NSObject {
         return decompressed
     }
 
+    /// Resumable variant of downloadBlob — saves partial state on failure for the given dive index.
+    private func downloadBlobResumable(index: Int, address: UInt32, size: UInt32,
+                                       compression: Bool, progressLabel: String?) async throws -> Data {
+        let initReq = BlockDownload.initRequest(address: address, size: size, compression: compression)
+        let initRsp = try await transfer(initReq)
+        let _ = try BlockDownload.parseInitResponse(initRsp)
+
+        // Check for resumable partial state.
+        var raw: Data
+        var blockNum: UInt8
+        let lreDetector: IncrementalLREDetector? = compression ? IncrementalLREDetector() : nil
+        if let partial = partialDownloads[index], partial.address == address {
+            raw = partial.accumulatedBytes
+            blockNum = partial.lastBlockNum &+ 1
+            // Feed existing bytes to the detector so it picks up where we left off.
+            if let detector = lreDetector { _ = detector.feed(raw) }
+        } else {
+            raw = Data()
+            blockNum = 1
+        }
+
+        var nbytes: UInt32 = UInt32(raw.count)
+        var done = lreDetector?.isDone ?? false
+
+        do {
+            while nbytes < size && !done {
+                let req = BlockDownload.blockRequest(blockNum: blockNum)
+
+                var lastError: Error?
+                var payload = Data()
+                for attempt in 0...maxBlockRetries {
+                    do {
+                        let rsp = try await transfer(req)
+                        payload = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
+                        raw.append(payload)
+                        nbytes &+= UInt32(payload.count)
+                        lastError = nil
+                        break
+                    } catch {
+                        lastError = error
+                        if attempt < maxBlockRetries {
+                            let delay = retryBaseDelayNs * UInt64(attempt + 1)
+                            try await Task.sleep(nanoseconds: delay)
+                        }
+                    }
+                }
+                if let err = lastError { throw err }
+
+                partialDownloads[index] = PartialDownload(
+                    address: address, size: size,
+                    lastBlockNum: blockNum, accumulatedBytes: raw
+                )
+
+                blockNum = blockNum &+ 1
+
+                if let detector = lreDetector {
+                    if detector.feed(payload) { done = true }
+                }
+
+                if let label = progressLabel {
+                    onProgress?(label, raw.count)
+                }
+            }
+        } catch {
+            throw error
+        }
+
+        let quitRsp = try await transfer(BlockDownload.quitRequest)
+        try BlockDownload.parseQuitResponse(quitRsp)
+
+        return raw
+    }
+
     // Cache populated by listDives(), used by downloadDive(at:).
     private var _baseAddr: UInt32?
     private var _records: [ManifestRecord] = []
+
+    // MARK: - Partial-download recovery (in-memory, v1)
+
+    private struct PartialDownload {
+        let address: UInt32
+        let size: UInt32
+        var lastBlockNum: UInt8
+        var accumulatedBytes: Data
+    }
+    private var partialDownloads: [Int: PartialDownload] = [:]
 
     // MARK: - Layer 3 internals (transfer + block download)
 
@@ -254,6 +377,9 @@ final class PeregrineBLEManager: NSObject {
         return inner
     }
 
+    private let maxBlockRetries = 2
+    private let retryBaseDelayNs: UInt64 = 500_000_000 // 500ms
+
     /// Block download driver — mirrors `shearwater_common_download` shearwater_common.c:391-519.
     private func downloadBlob(address: UInt32, size: UInt32, compression: Bool,
                               progressLabel: String? = nil) async throws -> Data {
@@ -267,21 +393,35 @@ final class PeregrineBLEManager: NSObject {
         var blockNum: UInt8 = 1
         var nbytes: UInt32 = 0
         var done = false
+        let lreDetector = compression ? IncrementalLREDetector() : nil
 
         while nbytes < size && !done {
             let req = BlockDownload.blockRequest(blockNum: blockNum)
-            let rsp = try await transfer(req)
-            let payload = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
-            raw.append(payload)
-            nbytes &+= UInt32(payload.count)
+
+            var lastError: Error?
+            var payload = Data()
+            for attempt in 0...maxBlockRetries {
+                do {
+                    let rsp = try await transfer(req)
+                    payload = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
+                    raw.append(payload)
+                    nbytes &+= UInt32(payload.count)
+                    lastError = nil
+                    break
+                } catch {
+                    lastError = error
+                    if attempt < maxBlockRetries {
+                        let delay = retryBaseDelayNs * UInt64(attempt + 1)
+                        try await Task.sleep(nanoseconds: delay)
+                    }
+                }
+            }
+            if let err = lastError { throw err }
+
             blockNum = blockNum &+ 1
 
-            if compression {
-                // Cheap done-check: try LRE-decode to detect end-of-stream marker.
-                if (raw.count * 8) % 9 == 0 {
-                    let (_, isFinal) = try Decompress.lre(raw)
-                    if isFinal { done = true }
-                }
+            if let detector = lreDetector {
+                if detector.feed(payload) { done = true }
             }
 
             if let label = progressLabel {
@@ -298,12 +438,18 @@ final class PeregrineBLEManager: NSObject {
 
     // MARK: - BLE-frame I/O
 
+    /// Computed chunk size using negotiated MTU. Falls back to 32 if peripheral is unavailable.
+    private var chunkSize: Int {
+        guard let p = peripheral else { return Peregrine.BLE_CHUNK_SIZE_DEFAULT }
+        let mtu = p.maximumWriteValueLength(for: .withoutResponse)
+        return min(mtu, Peregrine.BLE_CHUNK_SIZE_OPTIMIZED)
+    }
+
     /// Fragment a single SLIP-encoded logical frame into BLE chunks and write each chunk.
     private func sendBLEFrames(_ slipFrame: Data) async throws {
         guard let p = peripheral, let ch = sppCharacteristic else {
             throw PeregrineProtocolError.notConnected
         }
-        let chunkSize = Peregrine.BLE_CHUNK_SIZE
 
         // Prefer writeWithoutResponse for speed.
         let writeType: CBCharacteristicWriteType =
@@ -427,24 +573,43 @@ extension PeregrineBLEManager: CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager,
-                        didConnect peripheral: CBPeripheral) {
-        peripheral.discoverServices([Self.serviceUUID])
+                        didFailToConnect peripheral: CBPeripheral,
+                        error: Error?) {
+        let reason: String
+        if let cbErr = error as? CBError {
+            switch cbErr.code {
+            case .connectionFailed, .peerRemovedPairingInformation:
+                reason = "connection_rejected"
+            default:
+                reason = cbErr.localizedDescription
+            }
+        } else {
+            reason = error?.localizedDescription ?? "unknown error"
+        }
+        if let cc = connectContinuation {
+            connectContinuation = nil
+            cc.resume(throwing: PeregrineProtocolError.unexpectedResponse("Connect failed: \(reason)"))
+        }
+        onDisconnected?(reason)
     }
 
     func centralManager(_ central: CBCentralManager,
-                        didFailToConnect peripheral: CBPeripheral,
-                        error: Error?) {
-        let msg = error?.localizedDescription ?? "unknown error"
-        if let cc = connectContinuation {
-            connectContinuation = nil
-            cc.resume(throwing: PeregrineProtocolError.unexpectedResponse("Connect failed: \(msg)"))
-        }
+                        didConnect peripheral: CBPeripheral) {
+        connectTimestamp = Date()
+        peripheral.discoverServices([Self.serviceUUID])
     }
 
     func centralManager(_ central: CBCentralManager,
                         didDisconnectPeripheral peripheral: CBPeripheral,
                         error: Error?) {
-        cleanupConnection(error: error?.localizedDescription)
+        let reason: String?
+        if let ts = connectTimestamp, Date().timeIntervalSince(ts) < 2.0, error != nil {
+            reason = "device_busy"
+        } else {
+            reason = error?.localizedDescription
+        }
+        connectTimestamp = nil
+        cleanupConnection(error: reason)
     }
 }
 

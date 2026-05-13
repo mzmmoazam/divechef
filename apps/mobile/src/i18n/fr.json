@@ -41,6 +41,8 @@
     "permissionDenied": "Acces Bluetooth refuse. Verifiez les reglages de votre appareil.",
     "openSettings": "Ouvrir les reglages",
     "connectionLost": "Connexion perdue. Les plongees deja synchronisees sont conservees.",
+    "connectionRejected": "Connexion refusee. Fermez Shearwater Cloud ou toute autre appli BLE et reessayez.",
+    "deviceBusy": "L'appareil s'est deconnecte immediatement. Attendez un instant et reessayez.",
     "partialSuccess": "{{synced}} plongee(s) sur {{total}} synchronisee(s). Reessayez pour le reste."
   },
   "home": {

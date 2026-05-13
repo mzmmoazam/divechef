@@ -94,8 +94,14 @@ export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
           <View style={styles.centered}>
             <Text style={styles.errorIcon}>!</Text>
             <Text style={styles.errorText}>
-              {error === 'no_device'
+              {error === 'no_device' || error === 'no_device_found'
                 ? t('sync.noDevice')
+                : error === 'connection_rejected'
+                ? t('sync.connectionRejected')
+                : error === 'device_busy'
+                ? t('sync.deviceBusy')
+                : error === 'ble_connection_lost'
+                ? t('sync.connectionLost')
                 : t('common.error')}
             </Text>
             {syncedCount > 0 && (

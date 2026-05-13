@@ -31,7 +31,9 @@ enum Peregrine {
     // libdc fixes the SLIP-write chunk size at 32 bytes (incl. the 2-byte BLE mini-header
     // when transport == BLE). We do the same so the device-side reassembler sees identical
     // framing to what it gets from libdc on desktop. shearwater_common.c:139.
-    static let BLE_CHUNK_SIZE = 32
+    static let BLE_CHUNK_SIZE_DEFAULT = 32
+    // Optimized chunk size: MTU(writeWithoutResponse) = 77, minus 2-byte BLE mini-header = 75.
+    static let BLE_CHUNK_SIZE_OPTIMIZED = 75
 
     // Maximum payload size at the libdc transfer layer. shearwater_common.c:31.
     static let SZ_PACKET = 254
@@ -172,7 +174,7 @@ enum SLIP {
 enum BLEFramer {
     /// Split a SLIP-encoded payload into BLE chunks with the 2-byte mini-header.
     /// `chunkSize` must be >= 3 (header + at least 1 payload byte).
-    static func fragment(_ slipEncoded: Data, chunkSize: Int = Peregrine.BLE_CHUNK_SIZE) -> [Data] {
+    static func fragment(_ slipEncoded: Data, chunkSize: Int = Peregrine.BLE_CHUNK_SIZE_DEFAULT) -> [Data] {
         precondition(chunkSize >= 3, "BLE chunk size must allow at least 1 payload byte")
         let payloadPerChunk = chunkSize - 2
         let total = slipEncoded.count
@@ -424,6 +426,41 @@ enum Decompress {
         var (out, _) = try Self.lre(compressed)
         Self.xorPhase(&out)
         return out
+    }
+}
+
+/// Incremental LRE end-of-stream detector. Tracks bit offset across `feed()` calls
+/// without re-scanning already-processed bytes. Used during block downloads to detect
+/// completion without full re-decompression each block.
+final class IncrementalLREDetector {
+    private var totalBitsReceived: Int = 0
+    private var bitOffset: Int = 0
+    private var allBytes: [UInt8] = []
+    private(set) var isDone: Bool = false
+
+    /// Feed new compressed bytes. Returns true if end-of-stream marker was found.
+    func feed(_ newData: Data) -> Bool {
+        if isDone { return true }
+        allBytes.append(contentsOf: newData)
+        totalBitsReceived = allBytes.count * 8
+
+        while bitOffset + 9 <= totalBitsReceived && !isDone {
+            let byteIdx = bitOffset / 8
+            let bit = bitOffset % 8
+            // Need at least 2 bytes from byteIdx for the 16-bit read.
+            guard byteIdx + 1 < allBytes.count else { break }
+            let hi = UInt32(allBytes[byteIdx]) << 8
+            let lo = UInt32(allBytes[byteIdx + 1])
+            let word = hi | lo
+            let shift = 16 - (bit + 9)
+            let value = Int((word >> UInt32(shift)) & 0x1FF)
+            if (value & 0x100) == 0 && value == 0 {
+                isDone = true
+                return true
+            }
+            bitOffset += 9
+        }
+        return isDone
     }
 }
 

@@ -89,6 +89,7 @@ class DiveComputerModule: RCTEventEmitter {
                         "index": dive.index,
                         "address": dive.address,
                         "fingerprintHex": dive.fingerprintHex,
+                        "firmwareVersion": manager.firmwareVersion as Any,
                     ]
                 }
                 resolve(result)

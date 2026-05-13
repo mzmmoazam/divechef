@@ -41,6 +41,8 @@
     "permissionDenied": "Bluetooth access denied. Check your device settings.",
     "openSettings": "Open Settings",
     "connectionLost": "Connection lost. Previously synced dives are saved.",
+    "connectionRejected": "Connection refused. Close Shearwater Cloud or other BLE apps and retry.",
+    "deviceBusy": "Device disconnected immediately. It may be busy — wait a moment and retry.",
     "partialSuccess": "{{synced}} of {{total}} dive(s) synced. Retry for the rest."
   },
   "home": {

@@ -1,5 +1,5 @@
 export type ScanResult = { name: string; identifier: string; rssi: number };
-export type ManifestEntry = { index: number; address: number; fingerprintHex: string };
+export type ManifestEntry = { index: number; address: number; fingerprintHex: string; firmwareVersion?: string };
 export type DownloadProgress = { bytesReceived: number; bytesExpected: number | null };
 
 export interface DiveComputerModule {
