@@ -46,11 +46,14 @@ export function useSync() {
   }, []);
 
   useEffect(() => {
-    const unsub = addDiveComputerListener('diveComputerDisconnected', () => {
-      // Only transition to error if we're mid-sync (downloading or uploading)
+    const unsub = addDiveComputerListener('diveComputerDisconnected', ({ reason }) => {
       setState((current) => {
         if (current === 'downloading' || current === 'uploading') {
-          setError('ble_connection_lost');
+          setError(reason || 'ble_connection_lost');
+          return 'error';
+        }
+        if (current === 'scanning' || current === 'connecting') {
+          setError(reason || 'no_device');
           return 'error';
         }
         return current;

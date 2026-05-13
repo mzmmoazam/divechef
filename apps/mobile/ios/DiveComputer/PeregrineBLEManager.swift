@@ -54,6 +54,9 @@ final class PeregrineBLEManager: NSObject {
     /// Discovered peripherals cache (for connect-by-identifier).
     private var discoveredPeripherals: [String: CBPeripheral] = [:]
 
+    /// Cancellable scan timeout work item.
+    private var scanTimeoutWork: DispatchWorkItem?
+
     // MARK: - Internals (protocol layer)
 
     private let slipDecoder = SLIP.Decoder()
@@ -97,25 +100,29 @@ final class PeregrineBLEManager: NSObject {
                 self.pendingScan = true
                 return
             }
+            self.scanTimeoutWork?.cancel()
             self.discoveredPeripherals.removeAll()
             self.central.scanForPeripherals(withServices: [uuid], options: [
                 CBCentralManagerScanOptionAllowDuplicatesKey: false,
             ])
 
-            // Scan timeout: if no device found in 15s, notify JS.
-            self.queue.asyncAfter(deadline: .now() + Self.scanTimeoutSec) { [weak self] in
+            let timeoutWork = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
                 if self.discoveredPeripherals.isEmpty && self.central.isScanning {
                     self.central.stopScan()
                     self.onDisconnected?("no_device_found")
                 }
             }
+            self.scanTimeoutWork = timeoutWork
+            self.queue.asyncAfter(deadline: .now() + Self.scanTimeoutSec, execute: timeoutWork)
         }
     }
 
     /// Stop scanning.
     func stopScan() {
         queue.async { [weak self] in
+            self?.scanTimeoutWork?.cancel()
+            self?.scanTimeoutWork = nil
             self?.central.stopScan()
         }
     }
@@ -237,18 +244,13 @@ final class PeregrineBLEManager: NSObject {
         let diveAddr = baseAddr + rec.address
         onProgress?("Starting dive \(index)...", 0)
 
-        let compressedBlob: Data
-        do {
-            compressedBlob = try await downloadBlobResumable(
-                index: index,
-                address: diveAddr,
-                size: Peregrine.DIVE_SIZE,
-                compression: true,
-                progressLabel: "dive \(index)"
-            )
-        } catch {
-            throw error
-        }
+        let compressedBlob = try await downloadBlobResumable(
+            index: index,
+            address: diveAddr,
+            size: Peregrine.DIVE_SIZE,
+            compression: true,
+            progressLabel: "dive \(index)"
+        )
 
         partialDownloads.removeValue(forKey: index)
 
@@ -261,6 +263,8 @@ final class PeregrineBLEManager: NSObject {
     }
 
     /// Resumable variant of downloadBlob — saves partial state on failure for the given dive index.
+    /// On resume: re-requests blocks from 1 (protocol requires sequential), discards already-received
+    /// blocks, then continues accumulating new blocks.
     private func downloadBlobResumable(index: Int, address: UInt32, size: UInt32,
                                        compression: Bool, progressLabel: String?) async throws -> Data {
         let initReq = BlockDownload.initRequest(address: address, size: size, compression: compression)
@@ -269,62 +273,67 @@ final class PeregrineBLEManager: NSObject {
 
         // Check for resumable partial state.
         var raw: Data
-        var blockNum: UInt8
+        let resumeFromBlock: UInt8
         let lreDetector: IncrementalLREDetector? = compression ? IncrementalLREDetector() : nil
         if let partial = partialDownloads[index], partial.address == address {
             raw = partial.accumulatedBytes
-            blockNum = partial.lastBlockNum &+ 1
-            // Feed existing bytes to the detector so it picks up where we left off.
+            resumeFromBlock = partial.lastBlockNum &+ 1
             if let detector = lreDetector { _ = detector.feed(raw) }
         } else {
             raw = Data()
-            blockNum = 1
+            resumeFromBlock = 1
+        }
+
+        // Protocol requires sequential block numbers from 1 after init.
+        // Re-fetch and discard blocks we already have.
+        var blockNum: UInt8 = 1
+        while blockNum < resumeFromBlock {
+            let req = BlockDownload.blockRequest(blockNum: blockNum)
+            let rsp = try await transfer(req)
+            let _ = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
+            blockNum = blockNum &+ 1
         }
 
         var nbytes: UInt32 = UInt32(raw.count)
         var done = lreDetector?.isDone ?? false
 
-        do {
-            while nbytes < size && !done {
-                let req = BlockDownload.blockRequest(blockNum: blockNum)
+        while nbytes < size && !done {
+            let req = BlockDownload.blockRequest(blockNum: blockNum)
 
-                var lastError: Error?
-                var payload = Data()
-                for attempt in 0...maxBlockRetries {
-                    do {
-                        let rsp = try await transfer(req)
-                        payload = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
-                        raw.append(payload)
-                        nbytes &+= UInt32(payload.count)
-                        lastError = nil
-                        break
-                    } catch {
-                        lastError = error
-                        if attempt < maxBlockRetries {
-                            let delay = retryBaseDelayNs * UInt64(attempt + 1)
-                            try await Task.sleep(nanoseconds: delay)
-                        }
+            var lastError: Error?
+            var payload = Data()
+            for attempt in 0...maxBlockRetries {
+                do {
+                    let rsp = try await transfer(req)
+                    payload = try BlockDownload.parseBlockResponse(rsp, expectedBlock: blockNum)
+                    raw.append(payload)
+                    nbytes &+= UInt32(payload.count)
+                    lastError = nil
+                    break
+                } catch {
+                    lastError = error
+                    if attempt < maxBlockRetries {
+                        let delay = retryBaseDelayNs * UInt64(attempt + 1)
+                        try await Task.sleep(nanoseconds: delay)
                     }
                 }
-                if let err = lastError { throw err }
-
-                partialDownloads[index] = PartialDownload(
-                    address: address, size: size,
-                    lastBlockNum: blockNum, accumulatedBytes: raw
-                )
-
-                blockNum = blockNum &+ 1
-
-                if let detector = lreDetector {
-                    if detector.feed(payload) { done = true }
-                }
-
-                if let label = progressLabel {
-                    onProgress?(label, raw.count)
-                }
             }
-        } catch {
-            throw error
+            if let err = lastError { throw err }
+
+            partialDownloads[index] = PartialDownload(
+                address: address, size: size,
+                lastBlockNum: blockNum, accumulatedBytes: raw
+            )
+
+            blockNum = blockNum &+ 1
+
+            if let detector = lreDetector {
+                if detector.feed(payload) { done = true }
+            }
+
+            if let label = progressLabel {
+                onProgress?(label, raw.count)
+            }
         }
 
         let quitRsp = try await transfer(BlockDownload.quitRequest)
@@ -569,6 +578,8 @@ extension PeregrineBLEManager: CBCentralManagerDelegate {
                         rssi RSSI: NSNumber) {
         let id = peripheral.identifier.uuidString
         discoveredPeripherals[id] = peripheral
+        scanTimeoutWork?.cancel()
+        scanTimeoutWork = nil
         onDiscovered?(id, peripheral.name, RSSI.intValue)
     }
 
