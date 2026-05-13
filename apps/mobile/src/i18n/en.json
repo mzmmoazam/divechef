@@ -118,11 +118,11 @@
     },
     "palier_securite_court": {
       "title": "Short safety stop",
-      "body": "Safety stop of {{actualSec}}s instead of the recommended 180s."
+      "body": "Safety stop of {{palierDurationSec}}s instead of the recommended {{requiredSec}}s."
     },
     "palier_deco_manque": {
       "title": "Missed deco stop",
-      "body": "Required deco stop at {{decoDepthM}} m for {{decoTimeSec}}s was not completed. Immediate DCS risk."
+      "body": "Required deco stop at {{requiredDepthM}} m for {{requiredTimeSec}}s was not completed. Immediate DCS risk."
     },
     "profondeur_depasse_niveau_leger": {
       "title": "Slightly exceeded depth limit",

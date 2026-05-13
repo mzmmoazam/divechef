@@ -118,11 +118,11 @@
     },
     "palier_securite_court": {
       "title": "Palier de securite court",
-      "body": "Palier de securite de {{actualSec}}s au lieu des 180s recommandees."
+      "body": "Palier de securite de {{palierDurationSec}}s au lieu des {{requiredSec}}s recommandees."
     },
     "palier_deco_manque": {
       "title": "Palier de decompression manque",
-      "body": "Palier obligatoire a {{decoDepthM}} m pendant {{decoTimeSec}}s non respecte. Risque immediat d'ADD."
+      "body": "Palier obligatoire a {{requiredDepthM}} m pendant {{requiredTimeSec}}s non respecte. Risque immediat d'ADD."
     },
     "profondeur_depasse_niveau_leger": {
       "title": "Profondeur legere au-dela du niveau",
