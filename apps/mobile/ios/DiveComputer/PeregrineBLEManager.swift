@@ -172,7 +172,7 @@ final class PeregrineBLEManager: NSObject {
             if let p = self.peripheral, p.state != .disconnected {
                 self.central.cancelPeripheralConnection(p)
             }
-            self.cleanupConnection(error: nil)
+            self.cleanupConnection(error: "user_initiated")
         }
     }
 

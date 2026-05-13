@@ -12,14 +12,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.ByteArrayOutputStream
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 @SuppressLint("MissingPermission")
 class PeregrineBleManager(private val context: Context) {
 
     companion object {
         private val UART_SERVICE_UUID = UUID.fromString("fe25c237-0ece-443c-b0aa-e02033e7029d")
-        private val UART_TX_CHAR_UUID = UUID.fromString("27b7570b-359e-45a3-91bb-cf7e70049bd2")
-        private val UART_RX_CHAR_UUID = UUID.fromString("27b7570b-359e-45a3-91bb-cf7e70049bd2")
+        // Shearwater uses a single bidirectional SPP characteristic (not the typical Nordic UART TX/RX split)
+        private val SPP_CHAR_UUID = UUID.fromString("27b7570b-359e-45a3-91bb-cf7e70049bd2")
         private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
         private const val SCAN_TIMEOUT_MS = 15_000L
@@ -45,9 +46,9 @@ class PeregrineBleManager(private val context: Context) {
     private var scanner: BluetoothLeScanner? = null
     private var scanCallback: ScanCallback? = null
     private var scanTimeoutJob: Job? = null
-    private var connectionContinuation: CancellableContinuation<Unit>? = null
-    private var mtuContinuation: CancellableContinuation<Int>? = null
-    private var writeContinuation: CancellableContinuation<Unit>? = null
+    @Volatile private var connectionContinuation: CancellableContinuation<Unit>? = null
+    @Volatile private var mtuContinuation: CancellableContinuation<Int>? = null
+    @Volatile private var writeContinuation: CancellableContinuation<Unit>? = null
 
     var firmwareVersion: String? = null
         private set
@@ -86,11 +87,11 @@ class PeregrineBleManager(private val context: Context) {
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        var foundDevice = false
+        val foundDevice = AtomicBoolean(false)
 
         scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                foundDevice = true
+                foundDevice.set(true)
                 scanTimeoutJob?.cancel()
                 scanTimeoutJob = null
                 onDiscovered(DiscoveredDevice(
@@ -105,7 +106,7 @@ class PeregrineBleManager(private val context: Context) {
 
         scanTimeoutJob = CoroutineScope(bleContext).launch {
             delay(SCAN_TIMEOUT_MS)
-            if (!foundDevice) {
+            if (!foundDevice.get()) {
                 stopScan()
                 onTimeout?.invoke()
             }
@@ -192,18 +193,17 @@ class PeregrineBleManager(private val context: Context) {
                 return
             }
 
-            txCharacteristic = service.getCharacteristic(UART_TX_CHAR_UUID)
-            val rxCharacteristic = service.getCharacteristic(UART_RX_CHAR_UUID)
-
-            if (txCharacteristic == null || rxCharacteristic == null) {
+            val sppChar = service.getCharacteristic(SPP_CHAR_UUID)
+            if (sppChar == null) {
                 connectionContinuation?.cancel(
-                    PeregrineProtocolException.UnexpectedResponse("UART characteristics not found")
+                    PeregrineProtocolException.UnexpectedResponse("SPP characteristic not found")
                 )
                 return
             }
+            txCharacteristic = sppChar
 
-            gatt.setCharacteristicNotification(rxCharacteristic, true)
-            val descriptor = rxCharacteristic.getDescriptor(CCCD_UUID)
+            gatt.setCharacteristicNotification(sppChar, true)
+            val descriptor = sppChar.getDescriptor(CCCD_UUID)
             if (descriptor != null) {
                 descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 gatt.writeDescriptor(descriptor)
@@ -245,14 +245,22 @@ class PeregrineBleManager(private val context: Context) {
         @Deprecated("Deprecated in API 33+, but needed for backward compat")
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             val value = characteristic.value ?: return
-            try {
-                val payload = BleFramer.stripHeader(value)
-                val frames = slipDecoder.feed(payload)
-                for (frame in frames) {
-                    frameChannel.trySend(frame)
-                }
-            } catch (_: Exception) {}
+            handleIncomingData(value)
         }
+
+        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
+            handleIncomingData(value)
+        }
+    }
+
+    private fun handleIncomingData(value: ByteArray) {
+        try {
+            val payload = BleFramer.stripHeader(value)
+            val frames = slipDecoder.feed(payload)
+            for (frame in frames) {
+                frameChannel.trySend(frame)
+            }
+        } catch (_: Exception) {}
     }
 
     // ---- Low-level transport ----
@@ -264,7 +272,7 @@ class PeregrineBleManager(private val context: Context) {
         suspendCancellableCoroutine<Unit> { cont ->
             writeContinuation = cont
             char.value = chunk
-            char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             if (!gatt.writeCharacteristic(char)) {
                 writeContinuation = null
                 cont.cancel(PeregrineProtocolException.UnexpectedResponse("writeCharacteristic returned false"))
@@ -347,17 +355,108 @@ class PeregrineBleManager(private val context: Context) {
         onProgress: ((Int) -> Unit)? = null
     ): ByteArray {
         val diveAddress = baseAddr + record.address
-        val compressed = blockDownload(
+        val compressed = downloadDiveResumable(
+            diveIndex = record.index,
             address = diveAddress,
             size = Peregrine.DIVE_SIZE,
-            compression = true,
             onProgress = onProgress
         )
+        partialDownloads.remove(record.index)
         return Decompress.full(compressed)
+    }
+
+    // ---- Partial-download recovery (in-memory, v1) ----
+
+    private data class PartialDownload(
+        val address: Long,
+        val lastBlockNum: Int,
+        val accumulatedBytes: ByteArray
+    )
+
+    private val partialDownloads = mutableMapOf<Int, PartialDownload>()
+
+    private suspend fun downloadDiveResumable(
+        diveIndex: Int,
+        address: Long,
+        size: Long,
+        onProgress: ((Int) -> Unit)? = null
+    ): ByteArray {
+        val initPayload = BlockDownload.initRequest(address, size, true)
+        val initResponse = transfer(initPayload)
+        BlockDownload.parseInitResponse(initResponse)
+
+        val lreDetector = IncrementalLREDetector()
+        val output: ByteArrayOutputStream
+        val resumeFromBlock: Int
+
+        val partial = partialDownloads[diveIndex]
+        if (partial != null && partial.address == address) {
+            output = ByteArrayOutputStream().also { it.write(partial.accumulatedBytes) }
+            resumeFromBlock = (partial.lastBlockNum + 1) and 0xFF
+            lreDetector.feed(partial.accumulatedBytes)
+        } else {
+            output = ByteArrayOutputStream()
+            resumeFromBlock = 1
+        }
+
+        // Protocol requires sequential block numbers from 1 after init.
+        // Re-fetch and discard blocks we already have.
+        var blockNum = 1
+        while (blockNum != resumeFromBlock && blockNum != 0) {
+            val req = BlockDownload.blockRequest(blockNum)
+            val rsp = transfer(req)
+            BlockDownload.parseBlockResponse(rsp, blockNum)
+            blockNum = (blockNum + 1) and 0xFF
+        }
+
+        var done = lreDetector.isDone
+
+        while (!done) {
+            var lastError: Exception? = null
+            var blockData: ByteArray = ByteArray(0)
+
+            for (attempt in 0..MAX_BLOCK_RETRIES) {
+                try {
+                    val blockPayload = BlockDownload.blockRequest(blockNum)
+                    val blockResponse = transfer(blockPayload)
+                    blockData = BlockDownload.parseBlockResponse(blockResponse, blockNum)
+                    lastError = null
+                    break
+                } catch (e: Exception) {
+                    lastError = e
+                    if (attempt < MAX_BLOCK_RETRIES) {
+                        delay(RETRY_BASE_DELAY_MS * (attempt + 1))
+                    }
+                }
+            }
+            if (lastError != null) throw lastError
+
+            if (blockData.isEmpty()) break
+
+            output.write(blockData)
+
+            partialDownloads[diveIndex] = PartialDownload(
+                address = address,
+                lastBlockNum = blockNum,
+                accumulatedBytes = output.toByteArray()
+            )
+
+            blockNum = (blockNum + 1) and 0xFF
+
+            if (lreDetector.feed(blockData)) { done = true }
+
+            onProgress?.invoke(output.size())
+        }
+
+        val quitResponse = transfer(BlockDownload.quitRequest)
+        BlockDownload.parseQuitResponse(quitResponse)
+
+        return output.toByteArray()
     }
 
     /**
      * Block download with retry, incremental LRE end-detection, and progress reporting.
+     * Used for manifest downloads (not resumable).
      */
     private suspend fun blockDownload(
         address: Long,
@@ -370,7 +469,7 @@ class PeregrineBleManager(private val context: Context) {
         BlockDownload.parseInitResponse(initResponse)
 
         val output = ByteArrayOutputStream()
-        var blockNum = 0
+        var blockNum = 1
         var done = false
         val lreDetector = if (compression) IncrementalLREDetector() else null
 
