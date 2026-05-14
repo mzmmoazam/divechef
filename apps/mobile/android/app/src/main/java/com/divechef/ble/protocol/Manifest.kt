@@ -90,9 +90,9 @@ object Manifest {
 object LogbookFormat {
 
     /**
-     * Read the 9-byte logupload response (ID_LOGUPLOAD = 0x8021) and return the
-     * effective base address. The response is a 1-byte tag + 4-byte big-endian addr
-     * + trailing bytes. shearwater_petrel.c:221.
+     * Read the logupload response (ID_LOGUPLOAD = 0x8021) and return the
+     * effective base address. shearwater_petrel.c:221-240.
+     * Logic: if high byte >= 0xC0, base is 0xC0000000; else 0x80000000.
      */
     fun baseAddress(fromLogUploadResponse: ByteArray): Long {
         if (fromLogUploadResponse.size < 5) {
@@ -100,16 +100,7 @@ object LogbookFormat {
                 "logupload too short ${fromLogUploadResponse.size}"
             )
         }
-        val raw =
-            ((fromLogUploadResponse[1].toInt() and 0xFF).toLong() shl 24) or
-            ((fromLogUploadResponse[2].toInt() and 0xFF).toLong() shl 16) or
-            ((fromLogUploadResponse[3].toInt() and 0xFF).toLong() shl 8) or
-            (fromLogUploadResponse[4].toInt() and 0xFF).toLong()
-
-        return when (raw) {
-            0xDD000000L, 0xC0000000L, 0x90000000L -> 0xC0000000L
-            0x80000000L -> 0x80000000L
-            else -> throw PeregrineProtocolException.UnknownLogbookFormat(raw)
-        }
+        val highByte = fromLogUploadResponse[1].toInt() and 0xFF
+        return if (highByte >= 0xC0) 0xC0000000L else 0x80000000L
     }
 }

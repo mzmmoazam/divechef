@@ -514,26 +514,20 @@ enum Manifest {
 // MARK: - Logbook base address mapping (shearwater_petrel.c:215-235)
 
 enum LogbookFormat {
-    /// Read the 9-byte logupload response (`ID_LOGUPLOAD = 0x8021`) and return the
+    /// Read the logupload response (`ID_LOGUPLOAD = 0x8021`) and return the
     /// effective base address. The response is a 1-byte tag + 4-byte big-endian addr
-    /// + trailing bytes. shearwater_petrel.c:221.
+    /// + trailing bytes. shearwater_petrel.c:221-240.
+    /// Logic: if high byte >= 0xC0, base is 0xC0000000; else 0x80000000.
     static func baseAddress(fromLogUploadResponse data: Data) throws -> UInt32 {
         guard data.count >= 5 else {
             throw PeregrineProtocolError.unexpectedResponse("logupload too short \(data.count)")
         }
         let s = data.startIndex
-        let raw =
-            (UInt32(data[s + 1]) << 24) |
-            (UInt32(data[s + 2]) << 16) |
-            (UInt32(data[s + 3]) << 8)  |
-             UInt32(data[s + 4])
-        switch raw {
-        case 0xDD000000, 0xC0000000, 0x90000000:
+        let highByte = data[s + 1]
+        if highByte >= 0xC0 {
             return 0xC0000000
-        case 0x80000000:
+        } else {
             return 0x80000000
-        default:
-            throw PeregrineProtocolError.unknownLogbookFormat(raw)
         }
     }
 }

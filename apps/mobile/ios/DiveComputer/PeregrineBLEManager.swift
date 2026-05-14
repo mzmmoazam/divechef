@@ -68,7 +68,8 @@ final class PeregrineBLEManager: NSObject {
     private var pendingFrames: [Data] = []
 
     /// Per-request timeout (ms). libdc uses 3000 ms (shearwater_common.c:62).
-    private let readTimeoutMs: UInt64 = 5000
+    /// Production uses 10s for safety margin on first-run BLE connections.
+    private let readTimeoutMs: UInt64 = 10_000
 
     // MARK: - Connect completion
 
@@ -184,14 +185,14 @@ final class PeregrineBLEManager: NSObject {
         guard isReady else { throw PeregrineProtocolError.notConnected }
 
         // Per shearwater_petrel.c:160-220, libdc reads serial -> firmware -> hardware -> logupload
-        let _ = try await rdbi(id: Peregrine.ID_SERIAL, expectedLen: 8)
+        let _ = try await rdbi(id: Peregrine.ID_SERIAL)
 
         let firmware = try await rdbi(id: Peregrine.ID_FIRMWARE)
         firmwareVersion = String(data: firmware, encoding: .ascii)
 
-        let _ = try await rdbi(id: Peregrine.ID_HARDWARE, expectedLen: 2)
+        let _ = try await rdbi(id: Peregrine.ID_HARDWARE)
 
-        let logupload = try await rdbi(id: Peregrine.ID_LOGUPLOAD, expectedLen: 9)
+        let logupload = try await rdbi(id: Peregrine.ID_LOGUPLOAD)
         let baseAddr = try LogbookFormat.baseAddress(fromLogUploadResponse: logupload)
 
         // Download the manifest (uncompressed). Loop pages for >48 dives.
