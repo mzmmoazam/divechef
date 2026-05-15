@@ -107,6 +107,22 @@ describe('useSync', () => {
     expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('cccccccc');
   });
 
+  it('fails open when getSyncedFingerprints throws (DB read error)', async () => {
+    // Defensive: if the SQLite read fails, the hook should treat the
+    // known set as empty and download everything. The catch in the
+    // hook (useSync.ts) protects against a leaked BLE connection.
+    mockGetSyncedFingerprints.mockRejectedValue(new Error('db read failed'));
+    const { result } = renderHook(() => useSync(), { wrapper });
+    await act(async () => {
+      result.current.startSync();
+      await new Promise((r) => setTimeout(r, 0));
+      fireDiscovered();
+    });
+    await waitFor(() => expect(result.current.state).toBe('complete'));
+    expect((DiveComputerNative.downloadDive as jest.Mock).mock.calls.length).toBe(3);
+    expect(result.current.syncedCount).toBe(3);
+  });
+
   it('skips already-synced dives', async () => {
     mockGetSyncedFingerprints.mockResolvedValue(new Set(['aaaaaaaa', 'cccccccc']));
     const { result } = renderHook(() => useSync(), { wrapper });
