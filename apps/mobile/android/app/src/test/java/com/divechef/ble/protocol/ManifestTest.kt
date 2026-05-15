@@ -54,6 +54,11 @@ class ManifestTest {
             makeRecord(Peregrine.MARK_VALID, hex("99 99 99 99"), 0x3000L)
         val parsed = Manifest.parse(blob)
         assertEquals("parser stops at first unknown header", 1, parsed.size)
+        assertEquals(
+            "kept record must be the first one, not a misaligned slice",
+            0x1000L, parsed[0].address
+        )
+        assertArrayEquals(hex("aa bb cc dd"), parsed[0].fingerprint)
     }
 
     @Test fun parse_truncatedTrailingRecord_isIgnored() {

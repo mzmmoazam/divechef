@@ -43,6 +43,19 @@ class BlockDownloadTest {
         BlockDownload.parseInitResponse(hex("75 10 ff"))
     }
 
+    @Test fun parseInitResponse_acceptsMaxBlockSize() {
+        // SZ_PACKET = 254 (0xFE) is the legitimate upper bound — must NOT throw.
+        val blockSize = BlockDownload.parseInitResponse(hex("75 10 fe"))
+        assertEquals(0xFE, blockSize)
+    }
+
+    @Test fun parseInitResponse_acceptsZeroBlockSize() {
+        // Degenerate but spec-legal: device says "size 0". Currently accepted —
+        // pin the behavior so a future change breaks loudly.
+        val blockSize = BlockDownload.parseInitResponse(hex("75 10 00"))
+        assertEquals(0x00, blockSize)
+    }
+
     @Test(expected = PeregrineProtocolException.UnexpectedResponse::class)
     fun parseInitResponse_throwsOnWrongLength() {
         BlockDownload.parseInitResponse(hex("75 10"))

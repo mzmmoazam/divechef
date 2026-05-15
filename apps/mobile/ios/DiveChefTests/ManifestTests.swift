@@ -66,6 +66,9 @@ final class ManifestTests: XCTestCase {
                                fingerprint: [0x99, 0x99, 0x99, 0x99], address: 0x3000))
         let parsed = Manifest.parse(blob)
         XCTAssertEqual(parsed.count, 1, "parser stops at first unknown header")
+        XCTAssertEqual(parsed[0].address, 0x1000,
+                       "kept record must be the first one, not a misaligned slice")
+        XCTAssertEqual(parsed[0].fingerprint, Data([0xAA, 0xBB, 0xCC, 0xDD]))
     }
 
     func testParse_truncatedTrailingRecord_isIgnored() {

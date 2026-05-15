@@ -51,6 +51,19 @@ final class BlockDownloadTests: XCTestCase {
         XCTAssertThrowsError(try BlockDownload.parseInitResponse(Data([0x75, 0x10, 0xFF])))
     }
 
+    func testParseInitResponse_acceptsMaxBlockSize() {
+        // SZ_PACKET = 254 (0xFE) is the legitimate upper bound — must NOT throw.
+        let blockSize = try! BlockDownload.parseInitResponse(Data([0x75, 0x10, 0xFE]))
+        XCTAssertEqual(blockSize, 0xFE)
+    }
+
+    func testParseInitResponse_acceptsZeroBlockSize() {
+        // Degenerate but spec-legal: device says "size 0". Currently accepted —
+        // pin the behavior so a future change breaks loudly.
+        let blockSize = try! BlockDownload.parseInitResponse(Data([0x75, 0x10, 0x00]))
+        XCTAssertEqual(blockSize, 0x00)
+    }
+
     func testParseInitResponse_throwsOnWrongLength() {
         XCTAssertThrowsError(try BlockDownload.parseInitResponse(Data([0x75, 0x10])))
     }
