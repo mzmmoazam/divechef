@@ -105,7 +105,12 @@ export function useSync() {
 
       setState('listing');
       const manifest = await DiveComputerNative.listDives();
-      const known = await getSyncedFingerprints();
+      // Fail-open: a DB read error here would leak the BLE connection
+      // (caller catch sets state but doesn't disconnect). Treat any
+      // syncedDives failure as "nothing known" — the worst case is a
+      // re-download of already-uploaded dives, which the server-side
+      // dedup-by-fingerprint handles harmlessly.
+      const known = await getSyncedFingerprints().catch(() => new Set<string>());
       const newDives = manifest.filter((e) => !known.has(e.fingerprintHex));
 
       if (newDives.length === 0) {
