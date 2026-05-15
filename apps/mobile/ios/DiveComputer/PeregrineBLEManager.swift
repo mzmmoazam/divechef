@@ -228,17 +228,12 @@ final class PeregrineBLEManager: NSObject {
                 // dive count > 48, but rejects subsequent pages at +0x600 with
                 // 'requestOutOfRange'. Treat any error past page 1 as
                 // end-of-manifest (matches libdc's behavior). On page 1, an
-                // error is a real failure — re-throw with diagnostic context.
+                // error is a real failure — propagate it.
                 if pageIndex > 0 {
                     dlog("listDives: end-of-manifest detected at page \(pageIndex) (\(error))")
                     break
                 }
-                let logHex = logupload.map { String(format: "%02x", $0) }.joined(separator: " ")
-                throw PeregrineProtocolError.unexpectedResponse(
-                    "manifest dl failed at 0x\(String(format: "%08x", manifestAddr)) " +
-                    "(base 0x\(String(format: "%08x", baseAddr)), " +
-                    "logupload \(logupload.count)B: \(logHex)) — \(error)"
-                )
+                throw error
             }
             let pageRecords = Manifest.parse(manifestBlob)
             allRecords.append(contentsOf: pageRecords)
