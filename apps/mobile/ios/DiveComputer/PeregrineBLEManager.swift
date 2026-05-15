@@ -216,11 +216,23 @@ final class PeregrineBLEManager: NSObject {
         let maxPages = (baseAddr == 0x80000000) ? 10 : 1
 
         for _ in 0..<maxPages {
-            let manifestBlob = try await downloadBlob(
-                address: manifestAddr,
-                size: Peregrine.MANIFEST_SIZE,
-                compression: false
-            )
+            let manifestBlob: Data
+            do {
+                manifestBlob = try await downloadBlob(
+                    address: manifestAddr,
+                    size: Peregrine.MANIFEST_SIZE,
+                    compression: false
+                )
+            } catch {
+                // DEV diagnostic: surface the logupload bytes alongside the block-init NAK
+                // so we can see what the device actually returned and what address we tried.
+                let logHex = logupload.map { String(format: "%02x", $0) }.joined(separator: " ")
+                throw PeregrineProtocolError.unexpectedResponse(
+                    "manifest dl failed at 0x\(String(format: "%08x", manifestAddr)) " +
+                    "(base 0x\(String(format: "%08x", baseAddr)), " +
+                    "logupload \(logupload.count)B: \(logHex)) — \(error)"
+                )
+            }
             let pageRecords = Manifest.parse(manifestBlob)
             allRecords.append(contentsOf: pageRecords)
 
