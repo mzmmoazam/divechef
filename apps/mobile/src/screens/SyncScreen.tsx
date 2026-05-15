@@ -102,6 +102,8 @@ export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
                 ? t('sync.deviceBusy')
                 : error === 'ble_connection_lost'
                 ? t('sync.connectionLost')
+                : __DEV__
+                ? error || t('common.error')
                 : t('common.error')}
             </Text>
             {syncedCount > 0 && (
