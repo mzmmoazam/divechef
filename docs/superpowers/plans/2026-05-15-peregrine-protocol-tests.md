@@ -1401,3 +1401,61 @@ stage."
 - Phase 2 tasks (2.1 through 2.8) are mutually independent. Dispatch them to subagents in parallel.
 - Phase 3 must run last (depends on all tests existing).
 - If a subagent finds the protocol code disagrees with libdc behavior, that's a bug in the implementation, not the test — it should report it back, not "fix" the test to match the bug.
+
+---
+
+## Deviations Discovered During Execution
+
+The following adjustments were made when this plan was executed
+(commits `b0e869f`, `dc9b445`, `8aa1e94`, `e53ce06`):
+
+### 1. Podfile required a `DiveChefTests` target block
+
+The Phase 1.1 Ruby script set up the Xcode test target correctly, but
+`@testable import DiveChef` failed at build time with
+`'React/RCTBridgeModule.h' file not found`. The fix was to add this
+block to `apps/mobile/ios/Podfile` and re-run `pod install`:
+
+```ruby
+target 'DiveChefTests' do
+  inherit! :complete
+end
+```
+
+This causes the test target to inherit React Native header / framework
+search paths from the app target's Pods.
+
+### 2. `apps/mobile/.gitignore` had to be widened for tracked test paths
+
+The mobile package's `.gitignore` ignored everything under `/ios/*`
+except `/ios/DiveComputer`. The `git add` commands in Tasks 1.1 and 2.x
+silently no-op'd. Whitelisted these paths explicitly:
+
+- `/ios/DiveChef.xcodeproj/project.pbxproj`
+- `/ios/DiveChefTests/`
+- `/ios/Podfile`
+
+### 3. Swift type names differ from the plan's expectation
+
+The plan referenced `SlipCodec` and `BleFramer` for Swift, but the
+actual iOS code uses `SLIP` and `BLEFramer` (see
+`PeregrineProtocol.swift:104, 176`). Android uses `SlipCodec` and
+`BleFramer`. Tests must reference the platform-specific name. The
+hex vectors are still byte-identical across platforms.
+
+### 4. `PRODUCT_NAME` was missing from the test-target Ruby script
+
+Without `config.build_settings['PRODUCT_NAME'] = 'DiveChefTests'` in
+the `build_configurations` loop, Xcode produced "Multiple commands
+produce '.xctest'" build errors. The Ruby script was patched in place
+before deletion. If anyone runs the verbatim plan script on a fresh
+clone, add `PRODUCT_NAME` to the loop.
+
+### 5. New iOS test files must be registered in the Xcode project
+
+Adding a `.swift` file to `apps/mobile/ios/DiveChefTests/` is not
+enough — Xcode does not auto-discover sources, so each new test class
+must be added to the `DiveChefTests` target's compile-sources build
+phase via a small `xcodeproj`-gem Ruby helper. The pattern used during
+execution was a one-shot script that idempotently registers any
+unregistered files in the directory.
