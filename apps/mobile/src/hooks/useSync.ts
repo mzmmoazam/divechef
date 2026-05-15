@@ -5,6 +5,7 @@ import { addDiveComputerListener } from '../native/events';
 import type { ScanResult, DownloadProgress } from '../native/DiveComputer';
 import { api } from '../services/api';
 import { enqueueUpload } from '../services/queue';
+import { getSyncedFingerprints, markFingerprintSynced } from '../services/syncedDives';
 
 const SERVICE_UUID = 'FE25C237-0ECE-443C-B0AA-E02033E7029D';
 
@@ -24,6 +25,8 @@ export function useSync() {
   const [discoveredDevices, setDiscoveredDevices] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [syncedCount, setSyncedCount] = useState(0);
+  const [currentDiveIndex, setCurrentDiveIndex] = useState(0);
+  const [totalDives, setTotalDives] = useState(0);
   const queryClient = useQueryClient();
   const abortRef = useRef(false);
   const discoveryUnsubRef = useRef<(() => void) | undefined>(undefined);
@@ -66,6 +69,8 @@ export function useSync() {
     abortRef.current = false;
     setError(null);
     setSyncedCount(0);
+    setCurrentDiveIndex(0);
+    setTotalDives(0);
     setDiscoveredDevices([]);
 
     try {
@@ -100,37 +105,49 @@ export function useSync() {
 
       setState('listing');
       const manifest = await DiveComputerNative.listDives();
+      const known = await getSyncedFingerprints();
+      const newDives = manifest.filter((e) => !known.has(e.fingerprintHex));
 
-      setState('downloading');
-      let synced = 0;
+      if (newDives.length === 0) {
+        await DiveComputerNative.disconnect();
+        setState('complete');
+        // still trigger the reprocess + invalidations below (unchanged tail)
+      } else {
+        setTotalDives(newDives.length);
+        setState('downloading');
+        let synced = 0;
 
-      for (const entry of manifest) {
-        if (abortRef.current) break;
+        for (let i = 0; i < newDives.length; i++) {
+          if (abortRef.current) break;
+          const entry = newDives[i];
+          setCurrentDiveIndex(i + 1);
 
-        const { rawBytes } = await DiveComputerNative.downloadDive(entry.index);
+          const { rawBytes } = await DiveComputerNative.downloadDive(entry.index);
 
-        setState('uploading');
-        const payload = {
-          rawBase64: rawBytes,
-          fingerprintHex: entry.fingerprintHex,
-          address: entry.address,
-        };
+          setState('uploading');
+          const payload = {
+            rawBase64: rawBytes,
+            fingerprintHex: entry.fingerprintHex,
+            address: entry.address,
+          };
 
-        try {
-          await api.post('/api/dives', payload, {
-            headers: { 'Content-Type': 'application/json' },
-          });
-          synced++;
-          setSyncedCount(synced);
-        } catch {
-          await enqueueUpload(payload);
+          try {
+            await api.post('/api/dives', payload, {
+              headers: { 'Content-Type': 'application/json' },
+            });
+            await markFingerprintSynced(entry.fingerprintHex);
+            synced++;
+            setSyncedCount(synced);
+          } catch {
+            await enqueueUpload(payload);
+          }
+
+          setState('downloading');
         }
 
-        setState('downloading');
+        await DiveComputerNative.disconnect();
+        setState('complete');
       }
-
-      await DiveComputerNative.disconnect();
-      setState('complete');
 
       // Reprocess any dives that were stored before the parser was deployed
       try {
@@ -157,5 +174,15 @@ export function useSync() {
     setState('idle');
   }, []);
 
-  return { state, progress, discoveredDevices, error, syncedCount, startSync, cancel };
+  return {
+    state,
+    progress,
+    discoveredDevices,
+    error,
+    syncedCount,
+    currentDiveIndex,
+    totalDives,
+    startSync,
+    cancel,
+  };
 }

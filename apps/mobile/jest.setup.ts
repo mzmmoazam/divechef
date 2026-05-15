@@ -1,3 +1,9 @@
+// Skip @testing-library/react-native's strict peer-dep check.
+// Workspace resolution can hoist a newer react-test-renderer (19.2.x) than the
+// library's hard-coded expectation (matching react@19.1.0). The runtime is
+// compatible; the check is overly strict.
+process.env.RNTL_SKIP_DEPS_CHECK = '1';
+
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn().mockResolvedValue(null),
   setItemAsync: jest.fn().mockResolvedValue(undefined),
