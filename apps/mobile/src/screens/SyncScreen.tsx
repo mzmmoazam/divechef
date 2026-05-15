@@ -6,7 +6,15 @@ import type { RootStackProps } from '../navigation/types';
 
 export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
   const { t } = useTranslation();
-  const { state, progress, error, syncedCount, currentDiveIndex, totalDives, startSync, cancel } = useSync();
+  const {
+    state,
+    error,
+    syncedCount,
+    currentDiveIndex,
+    totalDives,
+    startSync,
+    cancel,
+  } = useSync();
 
   const renderContent = () => {
     switch (state) {
