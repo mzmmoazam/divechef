@@ -316,15 +316,21 @@ class PeregrineBleManager(private val context: Context) {
         val firmware = rdbi(Peregrine.ID_FIRMWARE)
         firmwareVersion = String(firmware).trim(' ')
         val hardware = rdbi(Peregrine.ID_HARDWARE)
-        val logupload = rdbi(Peregrine.ID_LOGUPLOAD)
 
+        // Activate log upload mode (shearwater_common_open)
+        val openReq = WDBI.request(Peregrine.ID_LOGUPLOAD, byteArrayOf(0x00, 0x00, 0x00, 0x00))
+        val openResp = transfer(openReq)
+        WDBI.validate(openResp, Peregrine.ID_LOGUPLOAD)
+
+        val logupload = rdbi(Peregrine.ID_LOGUPLOAD)
         val baseAddr = LogbookFormat.baseAddress(logupload)
 
-        // Manifest pagination: loop pages until a page is not full.
+        // Pagination only for legacy 0xE0000000 format; newer format is single page.
         val allRecords = mutableListOf<ManifestRecord>()
-        var manifestAddr = Peregrine.MANIFEST_ADDR
+        var manifestAddr = LogbookFormat.manifestAddress(baseAddr)
+        val maxPages = if (baseAddr == 0x80000000L) MAX_MANIFEST_PAGES else 1
 
-        for (page in 0 until MAX_MANIFEST_PAGES) {
+        for (page in 0 until maxPages) {
             val manifestData = blockDownload(
                 address = manifestAddr,
                 size = Peregrine.MANIFEST_SIZE,
@@ -334,11 +340,13 @@ class PeregrineBleManager(private val context: Context) {
             val pageRecords = Manifest.parse(manifestData)
             allRecords.addAll(pageRecords)
 
-            val totalEntries = manifestData.size / Peregrine.RECORD_SIZE
-            if (totalEntries >= Peregrine.RECORD_COUNT) {
-                manifestAddr += Peregrine.MANIFEST_SIZE
-            } else {
-                break
+            if (maxPages > 1) {
+                val totalEntries = manifestData.size / Peregrine.RECORD_SIZE
+                if (totalEntries >= Peregrine.RECORD_COUNT) {
+                    manifestAddr += Peregrine.MANIFEST_SIZE
+                } else {
+                    break
+                }
             }
         }
 
@@ -411,7 +419,7 @@ class PeregrineBleManager(private val context: Context) {
 
         var done = lreDetector.isDone
 
-        while (!done) {
+        while (output.size().toLong() < size && !done) {
             var lastError: Exception? = null
             var blockData: ByteArray = ByteArray(0)
 
@@ -473,7 +481,7 @@ class PeregrineBleManager(private val context: Context) {
         var done = false
         val lreDetector = if (compression) IncrementalLREDetector() else null
 
-        while (!done) {
+        while (output.size().toLong() < size && !done) {
             var lastError: Exception? = null
             var blockData: ByteArray = ByteArray(0)
 

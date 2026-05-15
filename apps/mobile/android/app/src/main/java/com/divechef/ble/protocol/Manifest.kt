@@ -101,6 +101,11 @@ object LogbookFormat {
             )
         }
         val highByte = fromLogUploadResponse[1].toInt() and 0xFF
-        return if (highByte >= 0xC0) 0xC0000000L else 0x80000000L
+        // Only 0x80 uses legacy base; all others (0x90, 0xC0, 0xDD) use 0xC0000000.
+        return if (highByte == 0x80) 0x80000000L else 0xC0000000L
+    }
+
+    fun manifestAddress(forBase: Long): Long {
+        return if (forBase == 0xC0000000L) 0xFFFF0000L else 0xE0000000L
     }
 }

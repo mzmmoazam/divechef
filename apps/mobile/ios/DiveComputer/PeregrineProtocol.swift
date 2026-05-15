@@ -67,7 +67,7 @@ enum Peregrine {
 
 // MARK: - Errors
 
-enum PeregrineProtocolError: Error, CustomStringConvertible {
+enum PeregrineProtocolError: Error, LocalizedError, CustomStringConvertible {
     case slipShortFrame(Int)
     case slipBadEscape(UInt8)
     case bleFrameTooShort(Int)
@@ -95,6 +95,8 @@ enum PeregrineProtocolError: Error, CustomStringConvertible {
         case .notConnected:                     return "Not connected"
         }
     }
+
+    var errorDescription: String? { description }
 }
 
 // MARK: - SLIP (RFC 1055)
@@ -524,11 +526,19 @@ enum LogbookFormat {
         }
         let s = data.startIndex
         let highByte = data[s + 1]
-        if highByte >= 0xC0 {
-            return 0xC0000000
-        } else {
+        // shearwater_petrel.c:221-240: only 0x80 uses legacy base; all others
+        // (0x90 Perdix AI, 0xC0 Peregrine, 0xDD newer) use 0xC0000000.
+        if highByte == 0x80 {
             return 0x80000000
+        } else {
+            return 0xC0000000
         }
+    }
+
+    /// Manifest address depends on the logbook format/base address.
+    /// shearwater_petrel.c:308: 0xC0 base → manifest at 0xFFFF0000; else 0xE0000000.
+    static func manifestAddress(forBase base: UInt32) -> UInt32 {
+        return base == 0xC0000000 ? 0xFFFF0000 : 0xE0000000
     }
 }
 
