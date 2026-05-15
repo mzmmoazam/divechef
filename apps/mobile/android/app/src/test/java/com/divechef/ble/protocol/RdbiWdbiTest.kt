@@ -38,8 +38,8 @@ class RdbiWdbiTest {
         val ex = assertThrows(PeregrineProtocolException.Nak::class.java) {
             RDBI.parse(nak, 0x8010)
         }
-        assertEquals(true, ex.message!!.contains("0x22"))
-        assertEquals(true, ex.message!!.contains("0x31"))
+        assertEquals(0x22.toByte(), ex.request)
+        assertEquals(0x31.toByte(), ex.code)
     }
 
     // RDBI parse: malformed
@@ -76,8 +76,8 @@ class RdbiWdbiTest {
         val ex = assertThrows(PeregrineProtocolException.Nak::class.java) {
             WDBI.validate(nak, 0x8021)
         }
-        assertEquals(true, ex.message!!.contains("0x2e"))
-        assertEquals(true, ex.message!!.contains("0x33"))
+        assertEquals(0x2e.toByte(), ex.request)
+        assertEquals(0x33.toByte(), ex.code)
     }
 
     @Test(expected = PeregrineProtocolException.UnexpectedResponse::class)

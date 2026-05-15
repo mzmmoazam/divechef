@@ -26,7 +26,7 @@ sealed class PeregrineProtocolException(message: String) : Exception(message) {
     class UnexpectedResponse(detail: String) :
         PeregrineProtocolException("Unexpected response: $detail")
 
-    class Nak(request: Byte, code: Byte) :
+    class Nak(val request: Byte, val code: Byte) :
         PeregrineProtocolException(
             String.format("NAK on request 0x%02x error 0x%02x", request, code)
         )
