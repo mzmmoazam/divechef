@@ -5,6 +5,8 @@ import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
 import android.os.ParcelUuid
+import android.util.Log
+import com.divechef.app.BuildConfig
 import com.divechef.ble.protocol.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -309,25 +311,41 @@ class PeregrineBleManager(private val context: Context) {
         return RDBI.parse(response, id)
     }
 
+    // ---- Diagnostics ----
+
+    private fun dlog(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("DiveChef", "PeregrineBleManager: $message")
+        }
+    }
+
     // ---- High-level operations ----
 
     suspend fun listDives(onProgress: ((Int) -> Unit)? = null): ListDivesResult {
+        dlog("listDives: reading serial…")
         val serial = rdbi(Peregrine.ID_SERIAL)
+        dlog("listDives: serial OK, reading firmware…")
         val firmware = rdbi(Peregrine.ID_FIRMWARE)
         firmwareVersion = String(firmware).trim(' ')
+        dlog("listDives: firmware=$firmwareVersion, reading hardware…")
         val hardware = rdbi(Peregrine.ID_HARDWARE)
+        dlog("listDives: hardware OK, opening logbook…")
 
         // Activate log upload mode (shearwater_common_open)
         val openReq = WDBI.request(Peregrine.ID_LOGUPLOAD, byteArrayOf(0x00, 0x00, 0x00, 0x00))
         val openResp = transfer(openReq)
         WDBI.validate(openResp, Peregrine.ID_LOGUPLOAD)
+        dlog("listDives: logbook opened, reading logupload…")
 
         val logupload = rdbi(Peregrine.ID_LOGUPLOAD)
+        dlog("listDives: logupload ${logupload.size} bytes: ${logupload.joinToString("") { "%02x".format(it) }}")
         val baseAddr = LogbookFormat.baseAddress(logupload)
+        dlog("listDives: baseAddr=0x%08x, downloading manifest…".format(baseAddr))
 
         // Pagination only for legacy 0xE0000000 format; newer format is single page.
         val allRecords = mutableListOf<ManifestRecord>()
         var manifestAddr = LogbookFormat.manifestAddress(baseAddr)
+        dlog("listDives: manifest address=0x%08x".format(manifestAddr))
         val maxPages = if (baseAddr == 0x80000000L) MAX_MANIFEST_PAGES else 1
 
         for (page in 0 until maxPages) {
