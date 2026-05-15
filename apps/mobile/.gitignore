@@ -42,9 +42,11 @@ yarn-error.*
 /android/*
 !/android/app
 /android/app/*
+!/android/app/build.gradle
 !/android/app/src
 /android/app/src/*
 !/android/app/src/main
+!/android/app/src/test
 /android/app/src/main/*
 !/android/app/src/main/java
 /android/app/src/main/java/*
