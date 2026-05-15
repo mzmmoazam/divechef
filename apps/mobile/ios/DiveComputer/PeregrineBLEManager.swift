@@ -215,7 +215,7 @@ final class PeregrineBLEManager: NSObject {
         dlog("listDives: manifest address=\(String(format:"0x%08x", manifestAddr))")
         let maxPages = (baseAddr == 0x80000000) ? 10 : 1
 
-        for _ in 0..<maxPages {
+        for pageIndex in 0..<maxPages {
             let manifestBlob: Data
             do {
                 manifestBlob = try await downloadBlob(
@@ -224,8 +224,15 @@ final class PeregrineBLEManager: NSObject {
                     compression: false
                 )
             } catch {
-                // DEV diagnostic: surface the logupload bytes alongside the block-init NAK
-                // so we can see what the device actually returned and what address we tried.
+                // The Peregrine fully populates a 48-record page even if real
+                // dive count > 48, but rejects subsequent pages at +0x600 with
+                // 'requestOutOfRange'. Treat any error past page 1 as
+                // end-of-manifest (matches libdc's behavior). On page 1, an
+                // error is a real failure — re-throw with diagnostic context.
+                if pageIndex > 0 {
+                    dlog("listDives: end-of-manifest detected at page \(pageIndex) (\(error))")
+                    break
+                }
                 let logHex = logupload.map { String(format: "%02x", $0) }.joined(separator: " ")
                 throw PeregrineProtocolError.unexpectedResponse(
                     "manifest dl failed at 0x\(String(format: "%08x", manifestAddr)) " +

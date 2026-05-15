@@ -343,12 +343,24 @@ class PeregrineBleManager(private val context: Context) {
         val maxPages = if (baseAddr == 0x80000000L) MAX_MANIFEST_PAGES else 1
 
         for (page in 0 until maxPages) {
-            val manifestData = blockDownload(
-                address = manifestAddr,
-                size = Peregrine.MANIFEST_SIZE,
-                compression = false,
-                onProgress = onProgress
-            )
+            val manifestData = try {
+                blockDownload(
+                    address = manifestAddr,
+                    size = Peregrine.MANIFEST_SIZE,
+                    compression = false,
+                    onProgress = onProgress
+                )
+            } catch (e: Exception) {
+                // The Peregrine fully populates a 48-record page even if real
+                // dive count > 48, but rejects subsequent pages at +0x600 with
+                // 'requestOutOfRange'. Treat any error past page 1 as
+                // end-of-manifest. On page 1, the error is a real failure.
+                if (page > 0) {
+                    dlog("listDives: end-of-manifest detected at page $page ($e)")
+                    break
+                }
+                throw e
+            }
             val pageRecords = Manifest.parse(manifestData)
             allRecords.addAll(pageRecords)
 
