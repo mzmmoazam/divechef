@@ -9,6 +9,13 @@
 import Foundation
 import CoreBluetooth
 
+@inline(__always)
+private func dlog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    print("[DiveChef] " + message())
+    #endif
+}
+
 // MARK: - PeregrineBLEManager
 
 final class PeregrineBLEManager: NSObject {
@@ -185,34 +192,34 @@ final class PeregrineBLEManager: NSObject {
         guard isReady else { throw PeregrineProtocolError.notConnected }
 
         // Per shearwater_petrel.c:160-220, libdc reads serial -> firmware -> hardware -> logupload
-        print("[DiveChef] listDives: reading serial…")
+        dlog("listDives: reading serial…")
         let _ = try await rdbi(id: Peregrine.ID_SERIAL)
-        print("[DiveChef] listDives: serial OK, reading firmware…")
+        dlog("listDives: serial OK, reading firmware…")
 
         let firmware = try await rdbi(id: Peregrine.ID_FIRMWARE)
         firmwareVersion = String(data: firmware, encoding: .ascii)
-        print("[DiveChef] listDives: firmware=\(firmwareVersion ?? "nil"), reading hardware…")
+        dlog("listDives: firmware=\(firmwareVersion ?? "nil"), reading hardware…")
 
         let _ = try await rdbi(id: Peregrine.ID_HARDWARE)
-        print("[DiveChef] listDives: hardware OK, opening logbook…")
+        dlog("listDives: hardware OK, opening logbook…")
 
         // shearwater_common_open(): WDBI to ID_LOGUPLOAD with 4 zero bytes activates
         // log upload mode. Without this, the device NAKs block download requests.
         let openReq = WDBI.request(id: Peregrine.ID_LOGUPLOAD, data: Data([0x00, 0x00, 0x00, 0x00]))
         let openResp = try await transfer(openReq)
         try WDBI.validate(response: openResp, id: Peregrine.ID_LOGUPLOAD)
-        print("[DiveChef] listDives: logbook opened, reading logupload…")
+        dlog("listDives: logbook opened, reading logupload…")
 
         let logupload = try await rdbi(id: Peregrine.ID_LOGUPLOAD)
-        print("[DiveChef] listDives: logupload \(logupload.count) bytes: \(logupload.map{String(format:"%02x",$0)}.joined())")
+        dlog("listDives: logupload \(logupload.count) bytes: \(logupload.map{String(format:"%02x",$0)}.joined())")
         let baseAddr = try LogbookFormat.baseAddress(fromLogUploadResponse: logupload)
-        print("[DiveChef] listDives: baseAddr=\(String(format:"0x%08x", baseAddr)), downloading manifest…")
+        dlog("listDives: baseAddr=\(String(format:"0x%08x", baseAddr)), downloading manifest…")
 
         // Download the manifest (uncompressed).
         // Pagination (multiple pages at +0x600 offsets) is only for legacy 0xE0000000 format.
         var allRecords: [ManifestRecord] = []
         var manifestAddr = LogbookFormat.manifestAddress(forBase: baseAddr)
-        print("[DiveChef] listDives: manifest address=\(String(format:"0x%08x", manifestAddr))")
+        dlog("listDives: manifest address=\(String(format:"0x%08x", manifestAddr))")
         let maxPages = (baseAddr == 0x80000000) ? 10 : 1
 
         for _ in 0..<maxPages {
