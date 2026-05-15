@@ -35,6 +35,7 @@
     "scanning": "Recherche de votre ordinateur...",
     "connecting": "Connexion a {{deviceName}}...",
     "downloading": "Telechargement des plongees ({{received}}/{{expected}})...",
+    "downloadingDive": "Plongee {{current}} sur {{total}}...",
     "complete": "{{count}} plongee(s) synchronisee(s)",
     "noDevice": "Aucun ordinateur de plongee detecte",
     "retryButton": "Reessayer",

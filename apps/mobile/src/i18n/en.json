@@ -35,6 +35,7 @@
     "scanning": "Searching for your dive computer...",
     "connecting": "Connecting to {{deviceName}}...",
     "downloading": "Downloading dives ({{received}}/{{expected}})...",
+    "downloadingDive": "Dive {{current}} of {{total}}...",
     "complete": "{{count}} dive(s) synced",
     "noDevice": "No dive computer found",
     "retryButton": "Retry",

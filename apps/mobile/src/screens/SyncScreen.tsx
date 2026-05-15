@@ -6,7 +6,7 @@ import type { RootStackProps } from '../navigation/types';
 
 export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
   const { t } = useTranslation();
-  const { state, progress, error, syncedCount, startSync, cancel } = useSync();
+  const { state, progress, error, syncedCount, currentDiveIndex, totalDives, startSync, cancel } = useSync();
 
   const renderContent = () => {
     switch (state) {
@@ -55,11 +55,9 @@ export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#0066cc" />
             <Text style={styles.statusText}>
-              {t('sync.downloading', {
-                received: progress ? Math.round(progress.bytesReceived / 1024) : 0,
-                expected: progress?.bytesExpected
-                  ? Math.round(progress.bytesExpected / 1024)
-                  : '?',
+              {t('sync.downloadingDive', {
+                current: currentDiveIndex,
+                total: totalDives,
               })}
             </Text>
             {syncedCount > 0 && (
@@ -102,8 +100,6 @@ export default function SyncScreen({ navigation }: RootStackProps<'Sync'>) {
                 ? t('sync.deviceBusy')
                 : error === 'ble_connection_lost'
                 ? t('sync.connectionLost')
-                : __DEV__
-                ? error || t('common.error')
                 : t('common.error')}
             </Text>
             {syncedCount > 0 && (
