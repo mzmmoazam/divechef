@@ -8,19 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		1006419AAE5F18EA70CAA30D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D6311CDB6A375733744D9D /* ExpoModulesProvider.swift */; };
+		118DEA05214C80B3F79E3D29 /* BlockDownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15CD6C2DF09B654B95052931 /* BlockDownloadTests.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1A848AAA1D6AAC72DDEAC4EA /* RdbiWdbiTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D08CE1DC025466DECC78B56 /* RdbiWdbiTests.swift */; };
 		28A12EFE3A62855388F11D84 /* DiveComputerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 74D6CE3BAA923919B2979C3A /* DiveComputerModule.m */; };
 		2FF7DF6557C36A179377398C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72E84623169630A534CBD244 /* Foundation.framework */; };
 		39F54E1C06DAEEE84AA9A468 /* BleFramerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		4AE4BBB3BA1DC8D8EC965F8F /* SlipCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */; };
 		5F164B360004905967C714ED /* PeregrineBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53822DDA38AE064CAE2F7867 /* PeregrineBLEManager.swift */; };
+		65BD8715E1662C463EBED32C /* WrapCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CAF8A8180B5C92D1A99E1AF /* WrapCodecTests.swift */; };
+		874CC02F2D3AD3338647042B /* LogbookFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C2207F18305EE64DDC28B /* LogbookFormatTests.swift */; };
 		92D3A504E5093723CA9F82DC /* DiveChefTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B949CF09891A4B9C94A383 /* DiveChefTests.swift */; };
 		ABE7B12894FA48305526E2C9 /* DiveComputerModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816A5C960F9C9DCE4C6A6CCD /* DiveComputerModule.swift */; };
+		B4CF65C69CCF2235689AFE4E /* ManifestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 793881E48A7284C32327A9D8 /* ManifestTests.swift */; };
 		B8AF6AD0DA7082DC0F13D62C /* libPods-DiveChef.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F457B075E519ACC06D82EFF6 /* libPods-DiveChef.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BBAD8B7F391D4419A7290585 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8C4EBE5B5E85ABE41C4F9584 /* PrivacyInfo.xcprivacy */; };
 		C3A2E75A72CA8AFEAC3827EB /* libPods-DiveChef-DiveChefTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 715F27566629CF406CBA3EAE /* libPods-DiveChef-DiveChefTests.a */; };
+		CF03A9FD35AEEFE9C5AA25DA /* DecompressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D279A2138AA48A402B9E3E /* DecompressTests.swift */; };
 		E2584400238CFC71975C7E0F /* PeregrineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694CA61EED910C71C8D915CF /* PeregrineProtocol.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F484225AA5378A4B36B23503 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9AC7E7B6967394A381E9D3 /* ExpoModulesProvider.swift */; };
@@ -41,21 +47,27 @@
 		13B07F961A680F5B00A75B9A /* DiveChef.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DiveChef.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = DiveChef/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = DiveChef/Info.plist; sourceTree = "<group>"; };
+		15CD6C2DF09B654B95052931 /* BlockDownloadTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockDownloadTests.swift; sourceTree = "<group>"; };
 		23527599F16822C45FF398CE /* DiveChefTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DiveChefTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D1AD785670C0857016BB265 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4CAF8A8180B5C92D1A99E1AF /* WrapCodecTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WrapCodecTests.swift; sourceTree = "<group>"; };
 		4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlipCodecTests.swift; sourceTree = "<group>"; };
 		53822DDA38AE064CAE2F7867 /* PeregrineBLEManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PeregrineBLEManager.swift; sourceTree = "<group>"; };
 		5393DCFF102F1371B6FC7265 /* Pods-DiveChef-DiveChefTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef-DiveChefTests.debug.xcconfig"; path = "Target Support Files/Pods-DiveChef-DiveChefTests/Pods-DiveChef-DiveChefTests.debug.xcconfig"; sourceTree = "<group>"; };
+		555C2207F18305EE64DDC28B /* LogbookFormatTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogbookFormatTests.swift; sourceTree = "<group>"; };
 		575D046862E937ED3F7CF249 /* Pods-DiveChef-DiveChefTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef-DiveChefTests.release.xcconfig"; path = "Target Support Files/Pods-DiveChef-DiveChefTests/Pods-DiveChef-DiveChefTests.release.xcconfig"; sourceTree = "<group>"; };
 		59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleFramerTests.swift; sourceTree = "<group>"; };
 		694CA61EED910C71C8D915CF /* PeregrineProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PeregrineProtocol.swift; sourceTree = "<group>"; };
+		6D08CE1DC025466DECC78B56 /* RdbiWdbiTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RdbiWdbiTests.swift; sourceTree = "<group>"; };
 		715F27566629CF406CBA3EAE /* libPods-DiveChef-DiveChefTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DiveChef-DiveChefTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		72E84623169630A534CBD244 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		73B949CF09891A4B9C94A383 /* DiveChefTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiveChefTests.swift; sourceTree = "<group>"; };
 		74D6CE3BAA923919B2979C3A /* DiveComputerModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DiveComputerModule.m; sourceTree = "<group>"; };
+		793881E48A7284C32327A9D8 /* ManifestTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManifestTests.swift; sourceTree = "<group>"; };
 		816A5C960F9C9DCE4C6A6CCD /* DiveComputerModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiveComputerModule.swift; sourceTree = "<group>"; };
 		8C4EBE5B5E85ABE41C4F9584 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = DiveChef/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8D9AC7E7B6967394A381E9D3 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DiveChef-DiveChefTests/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		A1D279A2138AA48A402B9E3E /* DecompressTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DecompressTests.swift; sourceTree = "<group>"; };
 		A304B3A55B1AA81E7B3FE6D7 /* Pods-DiveChef.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef.debug.xcconfig"; path = "Target Support Files/Pods-DiveChef/Pods-DiveChef.debug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = DiveChef/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B6D6311CDB6A375733744D9D /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DiveChef/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
@@ -138,6 +150,12 @@
 				FACE86A702AE9A138DC22557 /* HexHelper.swift */,
 				4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */,
 				59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */,
+				4CAF8A8180B5C92D1A99E1AF /* WrapCodecTests.swift */,
+				6D08CE1DC025466DECC78B56 /* RdbiWdbiTests.swift */,
+				15CD6C2DF09B654B95052931 /* BlockDownloadTests.swift */,
+				A1D279A2138AA48A402B9E3E /* DecompressTests.swift */,
+				793881E48A7284C32327A9D8 /* ManifestTests.swift */,
+				555C2207F18305EE64DDC28B /* LogbookFormatTests.swift */,
 			);
 			name = DiveChefTests;
 			path = DiveChefTests;
@@ -550,6 +568,12 @@
 				F9854C7822341D3A2DE4B4C0 /* HexHelper.swift in Sources */,
 				4AE4BBB3BA1DC8D8EC965F8F /* SlipCodecTests.swift in Sources */,
 				39F54E1C06DAEEE84AA9A468 /* BleFramerTests.swift in Sources */,
+				65BD8715E1662C463EBED32C /* WrapCodecTests.swift in Sources */,
+				1A848AAA1D6AAC72DDEAC4EA /* RdbiWdbiTests.swift in Sources */,
+				118DEA05214C80B3F79E3D29 /* BlockDownloadTests.swift in Sources */,
+				CF03A9FD35AEEFE9C5AA25DA /* DecompressTests.swift in Sources */,
+				B4CF65C69CCF2235689AFE4E /* ManifestTests.swift in Sources */,
+				874CC02F2D3AD3338647042B /* LogbookFormatTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
