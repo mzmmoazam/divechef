@@ -329,13 +329,7 @@ class PeregrineBleManager(private val context: Context) {
         firmwareVersion = String(firmware).trim(' ')
         dlog("listDives: firmware=$firmwareVersion, reading hardware…")
         val hardware = rdbi(Peregrine.ID_HARDWARE)
-        dlog("listDives: hardware OK, opening logbook…")
-
-        // Activate log upload mode (shearwater_common_open)
-        val openReq = WDBI.request(Peregrine.ID_LOGUPLOAD, byteArrayOf(0x00, 0x00, 0x00, 0x00))
-        val openResp = transfer(openReq)
-        WDBI.validate(openResp, Peregrine.ID_LOGUPLOAD)
-        dlog("listDives: logbook opened, reading logupload…")
+        dlog("listDives: hardware OK, reading logupload…")
 
         val logupload = rdbi(Peregrine.ID_LOGUPLOAD)
         dlog("listDives: logupload ${logupload.size} bytes: ${logupload.joinToString("") { "%02x".format(it) }}")

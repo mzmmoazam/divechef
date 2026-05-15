@@ -201,14 +201,7 @@ final class PeregrineBLEManager: NSObject {
         dlog("listDives: firmware=\(firmwareVersion ?? "nil"), reading hardware…")
 
         let _ = try await rdbi(id: Peregrine.ID_HARDWARE)
-        dlog("listDives: hardware OK, opening logbook…")
-
-        // shearwater_common_open(): WDBI to ID_LOGUPLOAD with 4 zero bytes activates
-        // log upload mode. Without this, the device NAKs block download requests.
-        let openReq = WDBI.request(id: Peregrine.ID_LOGUPLOAD, data: Data([0x00, 0x00, 0x00, 0x00]))
-        let openResp = try await transfer(openReq)
-        try WDBI.validate(response: openResp, id: Peregrine.ID_LOGUPLOAD)
-        dlog("listDives: logbook opened, reading logupload…")
+        dlog("listDives: hardware OK, reading logupload…")
 
         let logupload = try await rdbi(id: Peregrine.ID_LOGUPLOAD)
         dlog("listDives: logupload \(logupload.count) bytes: \(logupload.map{String(format:"%02x",$0)}.joined())")
