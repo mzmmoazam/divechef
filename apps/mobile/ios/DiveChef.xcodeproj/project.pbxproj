@@ -11,7 +11,9 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		28A12EFE3A62855388F11D84 /* DiveComputerModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 74D6CE3BAA923919B2979C3A /* DiveComputerModule.m */; };
 		2FF7DF6557C36A179377398C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72E84623169630A534CBD244 /* Foundation.framework */; };
+		39F54E1C06DAEEE84AA9A468 /* BleFramerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		4AE4BBB3BA1DC8D8EC965F8F /* SlipCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */; };
 		5F164B360004905967C714ED /* PeregrineBLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53822DDA38AE064CAE2F7867 /* PeregrineBLEManager.swift */; };
 		92D3A504E5093723CA9F82DC /* DiveChefTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B949CF09891A4B9C94A383 /* DiveChefTests.swift */; };
 		ABE7B12894FA48305526E2C9 /* DiveComputerModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 816A5C960F9C9DCE4C6A6CCD /* DiveComputerModule.swift */; };
@@ -22,6 +24,7 @@
 		E2584400238CFC71975C7E0F /* PeregrineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694CA61EED910C71C8D915CF /* PeregrineProtocol.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		F484225AA5378A4B36B23503 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9AC7E7B6967394A381E9D3 /* ExpoModulesProvider.swift */; };
+		F9854C7822341D3A2DE4B4C0 /* HexHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE86A702AE9A138DC22557 /* HexHelper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,9 +43,11 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = DiveChef/Info.plist; sourceTree = "<group>"; };
 		23527599F16822C45FF398CE /* DiveChefTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DiveChefTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D1AD785670C0857016BB265 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SlipCodecTests.swift; sourceTree = "<group>"; };
 		53822DDA38AE064CAE2F7867 /* PeregrineBLEManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PeregrineBLEManager.swift; sourceTree = "<group>"; };
 		5393DCFF102F1371B6FC7265 /* Pods-DiveChef-DiveChefTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef-DiveChefTests.debug.xcconfig"; path = "Target Support Files/Pods-DiveChef-DiveChefTests/Pods-DiveChef-DiveChefTests.debug.xcconfig"; sourceTree = "<group>"; };
 		575D046862E937ED3F7CF249 /* Pods-DiveChef-DiveChefTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef-DiveChefTests.release.xcconfig"; path = "Target Support Files/Pods-DiveChef-DiveChefTests/Pods-DiveChef-DiveChefTests.release.xcconfig"; sourceTree = "<group>"; };
+		59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleFramerTests.swift; sourceTree = "<group>"; };
 		694CA61EED910C71C8D915CF /* PeregrineProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PeregrineProtocol.swift; sourceTree = "<group>"; };
 		715F27566629CF406CBA3EAE /* libPods-DiveChef-DiveChefTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DiveChef-DiveChefTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		72E84623169630A534CBD244 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -60,6 +65,7 @@
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DiveChef/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* DiveChef-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DiveChef-Bridging-Header.h"; path = "DiveChef/DiveChef-Bridging-Header.h"; sourceTree = "<group>"; };
 		F457B075E519ACC06D82EFF6 /* libPods-DiveChef.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DiveChef.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FACE86A702AE9A138DC22557 /* HexHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HexHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +135,9 @@
 			children = (
 				73B949CF09891A4B9C94A383 /* DiveChefTests.swift */,
 				2D1AD785670C0857016BB265 /* Info.plist */,
+				FACE86A702AE9A138DC22557 /* HexHelper.swift */,
+				4F94D67F0A991EB79C5495C8 /* SlipCodecTests.swift */,
+				59D6A51109A28B7B84ED3EC6 /* BleFramerTests.swift */,
 			);
 			name = DiveChefTests;
 			path = DiveChefTests;
@@ -538,6 +547,9 @@
 			files = (
 				92D3A504E5093723CA9F82DC /* DiveChefTests.swift in Sources */,
 				F484225AA5378A4B36B23503 /* ExpoModulesProvider.swift in Sources */,
+				F9854C7822341D3A2DE4B4C0 /* HexHelper.swift in Sources */,
+				4AE4BBB3BA1DC8D8EC965F8F /* SlipCodecTests.swift in Sources */,
+				39F54E1C06DAEEE84AA9A468 /* BleFramerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
