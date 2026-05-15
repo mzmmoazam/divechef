@@ -21,9 +21,16 @@ jest.mock('expo-sqlite', () => {
     }),
     getAllAsync: jest.fn(async () => rows.slice()),
   };
+  const openDatabaseAsync = jest.fn().mockResolvedValue(db);
   return {
-    openDatabaseAsync: jest.fn().mockResolvedValue(db),
-    __mockReset: () => { rows.length = 0; (db.execAsync as jest.Mock).mockClear(); (db.runAsync as jest.Mock).mockClear(); (db.getAllAsync as jest.Mock).mockClear(); },
+    openDatabaseAsync,
+    __mockReset: () => {
+      rows.length = 0;
+      openDatabaseAsync.mockClear();
+      (db.execAsync as jest.Mock).mockClear();
+      (db.runAsync as jest.Mock).mockClear();
+      (db.getAllAsync as jest.Mock).mockClear();
+    },
   };
 });
 
@@ -63,11 +70,22 @@ describe('syncedDives', () => {
     expect(result.size).toBe(1);
   });
 
-  it('initializes the schema only once across multiple calls', async () => {
+  it('uses INSERT OR IGNORE for race-safe idempotency', async () => {
+    // Pin the SQL contract: the dedup test above passes against the
+    // mock either way, but a future refactor that drops OR IGNORE
+    // would silently regress. This assertion catches it.
     const mockDb = await (SQLite.openDatabaseAsync as jest.Mock)();
+    await markFingerprintSynced('check');
+    expect((mockDb.runAsync as jest.Mock).mock.calls[0][0]).toMatch(
+      /INSERT OR IGNORE/
+    );
+  });
+
+  it('opens the database only once across multiple calls', async () => {
+    // Lazy-init invariant: getDb() must reuse the cached handle.
     await getSyncedFingerprints();
     await getSyncedFingerprints();
     await markFingerprintSynced('x');
-    expect((mockDb.execAsync as jest.Mock).mock.calls.length).toBe(1);
+    expect((SQLite.openDatabaseAsync as jest.Mock).mock.calls.length).toBe(1);
   });
 });
