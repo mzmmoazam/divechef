@@ -39,6 +39,11 @@ yarn-error.*
 # generated native folders (expo prebuild output)
 /ios/*
 !/ios/DiveComputer
+!/ios/DiveChefTests
+!/ios/DiveChef.xcodeproj
+/ios/DiveChef.xcodeproj/*
+!/ios/DiveChef.xcodeproj/project.pbxproj
+!/ios/Podfile
 /android/*
 !/android/app
 /android/app/*
