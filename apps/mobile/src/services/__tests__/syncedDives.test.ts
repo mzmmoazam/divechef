@@ -14,32 +14,24 @@ jest.mock('expo-sqlite', () => {
 
   const db = {
     execAsync: jest.fn(async (sql: string) => {
-      // Honor migration SQL: ADD COLUMN, DELETE, recreate-and-rename, CREATE TABLE
+      // Honor the migration SQL the production module emits:
+      //   - DROP TABLE synced_fingerprints      (pre-migration rebuild path)
+      //   - CREATE TABLE [IF NOT EXISTS] synced_fingerprints (...)
+      //   - DELETE FROM ... WHERE user_id IS NULL  (defensive on already-migrated)
       const cleaned = sql.replace(/\s+/g, ' ').trim();
       if (/DROP TABLE synced_fingerprints/i.test(cleaned)) {
         rows = [];
         columns = new Set();
         return undefined;
       }
-      if (/CREATE TABLE (IF NOT EXISTS )?synced_fingerprints/i.test(cleaned)) {
-        // Initial fresh schema in the production module is the new
-        // composite-PK shape: (user_id, fingerprint, synced_at).
-        if (!columns.has('user_id')) {
-          columns = new Set(['user_id', 'fingerprint', 'synced_at']);
-        }
-        return undefined;
-      }
-      if (/ALTER TABLE synced_fingerprints ADD COLUMN user_id/i.test(cleaned)) {
-        columns.add('user_id');
-        rows = rows.map((r) => ({ ...r, user_id: r.user_id ?? null }));
+      // Anchor the regex on `(` so it doesn't match `synced_fingerprints_new`.
+      if (/CREATE TABLE (IF NOT EXISTS )?synced_fingerprints\s*\(/i.test(cleaned)) {
+        // Production CREATE always uses the new composite-PK schema.
+        columns = new Set(['user_id', 'fingerprint', 'synced_at']);
         return undefined;
       }
       if (/DELETE FROM synced_fingerprints WHERE user_id IS NULL/i.test(cleaned)) {
         rows = rows.filter((r) => r.user_id != null);
-        return undefined;
-      }
-      if (/CREATE TABLE synced_fingerprints_new/i.test(cleaned)) {
-        // Composite PK rebuild flow — handled by the test's executeMigrationSQL helper.
         return undefined;
       }
       return undefined;

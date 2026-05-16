@@ -2,7 +2,10 @@ import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'divechef_sync.db';
 
-let db: SQLite.SQLiteDatabase | null = null;
+// Cache the in-flight Promise (not the resolved value) so concurrent
+// callers at app boot don't both try to migrate. The first caller's
+// migration wins; subsequent callers await the same Promise.
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
   const cols = await database.getAllAsync<{ name: string }>(
@@ -46,16 +49,20 @@ async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
   `);
 }
 
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync(DB_NAME);
-    await ensureMigrated(db);
+function getDb(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const d = await SQLite.openDatabaseAsync(DB_NAME);
+      await ensureMigrated(d);
+      return d;
+    })();
   }
-  return db;
+  return dbPromise;
 }
 
 /** Returns the set of fingerprint hex strings the given user has uploaded. */
 export async function getSyncedFingerprints(userId: string): Promise<Set<string>> {
+  if (!userId) throw new Error('syncedDives: userId is required');
   const database = await getDb();
   const rows = await database.getAllAsync<{ fingerprint: string }>(
     'SELECT fingerprint FROM synced_fingerprints WHERE user_id = ?',
@@ -69,6 +76,8 @@ export async function markFingerprintSynced(
   userId: string,
   fingerprint: string
 ): Promise<void> {
+  if (!userId) throw new Error('syncedDives: userId is required');
+  if (!fingerprint) throw new Error('syncedDives: fingerprint is required');
   const database = await getDb();
   await database.runAsync(
     'INSERT OR IGNORE INTO synced_fingerprints (user_id, fingerprint, synced_at) VALUES (?, ?, ?)',
@@ -78,5 +87,5 @@ export async function markFingerprintSynced(
 
 /** Test-only: forces re-init on next call. */
 export function __resetSyncedDivesForTests(): void {
-  db = null;
+  dbPromise = null;
 }
