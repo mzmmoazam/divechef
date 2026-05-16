@@ -16,7 +16,12 @@ jest.mock('expo-sqlite', () => {
     execAsync: jest.fn(async (sql: string) => {
       // Honor migration SQL: ADD COLUMN, DELETE, recreate-and-rename, CREATE TABLE
       const cleaned = sql.replace(/\s+/g, ' ').trim();
-      if (/CREATE TABLE IF NOT EXISTS synced_fingerprints/i.test(cleaned)) {
+      if (/DROP TABLE synced_fingerprints/i.test(cleaned)) {
+        rows = [];
+        columns = new Set();
+        return undefined;
+      }
+      if (/CREATE TABLE (IF NOT EXISTS )?synced_fingerprints/i.test(cleaned)) {
         // Initial fresh schema in the production module is the new
         // composite-PK shape: (user_id, fingerprint, synced_at).
         if (!columns.has('user_id')) {

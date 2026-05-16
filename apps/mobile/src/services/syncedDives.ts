@@ -5,7 +5,6 @@ const DB_NAME = 'divechef_sync.db';
 let db: SQLite.SQLiteDatabase | null = null;
 
 async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
-  // Inspect the table to decide between fresh-init and migration.
   const cols = await database.getAllAsync<{ name: string }>(
     'PRAGMA table_info(synced_fingerprints)'
   );
@@ -24,17 +23,27 @@ async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
     return;
   }
 
-  // Existing table from a previous version. Add the column if missing,
-  // then drop legacy unscoped rows. The composite-PK rebuild is handled
-  // separately because SQLite does not support ALTER TABLE … ADD CONSTRAINT.
-  if (!colNames.has('user_id')) {
-    await database.execAsync(
-      'ALTER TABLE synced_fingerprints ADD COLUMN user_id TEXT'
+  if (colNames.has('user_id')) {
+    // Already migrated. Defensively drop any rows that snuck in unscoped.
+    await database.runAsync(
+      'DELETE FROM synced_fingerprints WHERE user_id IS NULL'
     );
+    return;
   }
-  await database.runAsync(
-    'DELETE FROM synced_fingerprints WHERE user_id IS NULL'
-  );
+
+  // Pre-migration table: every row is unscoped legacy data. Rebuild from
+  // scratch with the composite PK. SQLite does not support ALTER TABLE …
+  // ADD CONSTRAINT, so DROP + CREATE is the right move (and we'd be
+  // DELETE-ing all those rows anyway because they have NULL user_id).
+  await database.execAsync('DROP TABLE synced_fingerprints');
+  await database.execAsync(`
+    CREATE TABLE synced_fingerprints (
+      user_id     TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      synced_at   INTEGER NOT NULL,
+      PRIMARY KEY (user_id, fingerprint)
+    );
+  `);
 }
 
 async function getDb(): Promise<SQLite.SQLiteDatabase> {
