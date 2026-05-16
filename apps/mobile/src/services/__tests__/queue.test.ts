@@ -122,6 +122,8 @@ jest.mock('expo-sqlite', () => {
         user_id: null,
       });
     },
+    __getAttempts: (userId: string): number[] =>
+      rows.filter((r) => r.user_id === userId).map((r) => r.attempts),
   };
 });
 
@@ -167,9 +169,19 @@ describe('queue', () => {
 
   it('flushQueue increments attempts on uploadFn failure', async () => {
     await enqueueUpload(U1, { x: 1 });
-    const result = await flushQueue(U1, async () => false);
-    expect(result.succeeded).toBe(0);
-    expect(result.failed).toBe(1);
+    const getAttempts = (SQLite as unknown as { __getAttempts: (u: string) => number[] })
+      .__getAttempts;
+    expect(getAttempts(U1)).toEqual([0]);
+
+    const r1 = await flushQueue(U1, async () => false);
+    expect(r1.failed).toBe(1);
+    expect(getAttempts(U1)).toEqual([1]);
+
+    // Second failure: same row, attempts goes to 2 (verifies the SQL is
+    // 'attempts + 1', not a hardcoded 'attempts = 1').
+    const r2 = await flushQueue(U1, async () => false);
+    expect(r2.failed).toBe(1);
+    expect(getAttempts(U1)).toEqual([2]);
     expect(await getPendingCount(U1)).toBe(1);
   });
 

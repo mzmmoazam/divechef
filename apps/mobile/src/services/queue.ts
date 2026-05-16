@@ -39,9 +39,16 @@ async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
 
   // Pre-migration: every row is unscoped legacy data with a NULL bearer-token
   // attribution. We refuse to flush them under a different user, so DELETE.
+  // NOTE: this discards any pending uploads queued by a pre-migration build of
+  // the app. Acceptable per spec — those rows have no user attribution and
+  // could not be safely flushed.
+  //
   // SQLite cannot ALTER TABLE … ADD COLUMN with NOT NULL without a default,
-  // so add the column nullable then DELETE the legacy rows. The schema's
-  // NOT NULL constraint applies only to subsequent inserts.
+  // so the added column is nullable at the database layer. The schema's
+  // NOT NULL constraint applies only to the fresh-install CREATE TABLE.
+  // For migrated databases, NOT NULL is enforced at the application layer
+  // by enqueueUpload's userId guard — any caller bypassing that function
+  // could insert a NULL user_id silently.
   await database.execAsync(
     'ALTER TABLE upload_queue ADD COLUMN user_id TEXT'
   );
