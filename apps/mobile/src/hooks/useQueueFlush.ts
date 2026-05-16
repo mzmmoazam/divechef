@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { AppState } from 'react-native';
 import { getPendingCount, flushQueue } from '../services/queue';
 import { api } from '../services/api';
+import { useAuth } from './useAuth';
 
 async function uploadDive(payload: unknown): Promise<boolean> {
   try {
@@ -16,22 +17,29 @@ export function useQueueFlush() {
   const [pendingCount, setPendingCount] = useState(0);
   const appStateRef = useRef(AppState.currentState);
   const isFlushing = useRef(false);
+  const { user } = useAuth();
+  const userId = user?.id;
 
   const refreshCount = useCallback(async () => {
-    const count = await getPendingCount();
+    if (!userId) {
+      setPendingCount(0);
+      return;
+    }
+    const count = await getPendingCount(userId);
     setPendingCount(count);
-  }, []);
+  }, [userId]);
 
   const flush = useCallback(async () => {
+    if (!userId) return;
     if (isFlushing.current) return;
     isFlushing.current = true;
     try {
-      await flushQueue(uploadDive);
+      await flushQueue(userId, uploadDive);
       await refreshCount();
     } finally {
       isFlushing.current = false;
     }
-  }, [refreshCount]);
+  }, [refreshCount, userId]);
 
   useEffect(() => {
     refreshCount();

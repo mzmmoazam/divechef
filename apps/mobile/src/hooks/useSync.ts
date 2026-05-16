@@ -6,6 +6,7 @@ import type { ScanResult, DownloadProgress } from '../native/DiveComputer';
 import { api } from '../services/api';
 import { enqueueUpload } from '../services/queue';
 import { getSyncedFingerprints, markFingerprintSynced } from '../services/syncedDives';
+import { useAuth } from './useAuth';
 
 const SERVICE_UUID = 'FE25C237-0ECE-443C-B0AA-E02033E7029D';
 
@@ -28,6 +29,7 @@ export function useSync() {
   const [currentDiveIndex, setCurrentDiveIndex] = useState(0);
   const [totalDives, setTotalDives] = useState(0);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const abortRef = useRef(false);
   const discoveryUnsubRef = useRef<(() => void) | undefined>(undefined);
 
@@ -73,6 +75,13 @@ export function useSync() {
     setTotalDives(0);
     setDiscoveredDevices([]);
 
+    if (!user?.id) {
+      setState('error');
+      setError('unauthenticated');
+      return;
+    }
+    const userId = user.id;
+
     try {
       setState('scanning');
       await DiveComputerNative.startScan(SERVICE_UUID);
@@ -110,7 +119,7 @@ export function useSync() {
       // syncedDives failure as "nothing known" — the worst case is a
       // re-download of already-uploaded dives, which the server-side
       // dedup-by-fingerprint handles harmlessly.
-      const known = await getSyncedFingerprints().catch(() => new Set<string>());
+      const known = await getSyncedFingerprints(userId).catch(() => new Set<string>());
       const newDives = manifest.filter((e) => !known.has(e.fingerprintHex));
 
       if (newDives.length === 0) {
@@ -140,11 +149,11 @@ export function useSync() {
             await api.post('/api/dives', payload, {
               headers: { 'Content-Type': 'application/json' },
             });
-            await markFingerprintSynced(entry.fingerprintHex);
+            await markFingerprintSynced(userId, entry.fingerprintHex);
             synced++;
             setSyncedCount(synced);
           } catch {
-            await enqueueUpload(payload);
+            await enqueueUpload(userId, payload);
           }
 
           setState('downloading');
@@ -166,7 +175,7 @@ export function useSync() {
       const message = err instanceof Error ? err.message : 'unknown_error';
       setError(message);
     }
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
 
   const cancel = useCallback(async () => {
     abortRef.current = true;

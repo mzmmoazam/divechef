@@ -46,17 +46,24 @@ jest.mock('../services/api', () => ({
   api: { post: (...args: unknown[]) => mockApiPost(...args) },
 }));
 
+// Mock useAuth
+const mockUseAuth = jest.fn();
+jest.mock('../hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 // Mock queue
+const mockEnqueueUpload = jest.fn().mockResolvedValue(undefined);
 jest.mock('../services/queue', () => ({
-  enqueueUpload: jest.fn().mockResolvedValue(undefined),
+  enqueueUpload: (userId: string, payload: unknown) => mockEnqueueUpload(userId, payload),
 }));
 
 // Mock syncedDives — control the fingerprint set per test
 const mockGetSyncedFingerprints = jest.fn();
 const mockMarkFingerprintSynced = jest.fn();
 jest.mock('../services/syncedDives', () => ({
-  getSyncedFingerprints: () => mockGetSyncedFingerprints(),
-  markFingerprintSynced: (...args: unknown[]) => mockMarkFingerprintSynced(...args),
+  getSyncedFingerprints: (userId: string) => mockGetSyncedFingerprints(userId),
+  markFingerprintSynced: (userId: string, fp: string) => mockMarkFingerprintSynced(userId, fp),
 }));
 
 import { DiveComputerNative } from '../native';
@@ -79,6 +86,7 @@ const fireDiscovered = () =>
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
   mockDiscoveredHandlers = [];
   mockProgressHandlers = [];
   mockDisconnectedHandlers = [];
@@ -102,9 +110,9 @@ describe('useSync', () => {
     expect((DiveComputerNative.downloadDive as jest.Mock).mock.calls.length).toBe(3);
     expect(result.current.syncedCount).toBe(3);
     expect(mockMarkFingerprintSynced).toHaveBeenCalledTimes(3);
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('aaaaaaaa');
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('bbbbbbbb');
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('cccccccc');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'aaaaaaaa');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'bbbbbbbb');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'cccccccc');
   });
 
   it('fails open when getSyncedFingerprints throws (DB read error)', async () => {
@@ -136,7 +144,7 @@ describe('useSync', () => {
     expect((DiveComputerNative.downloadDive as jest.Mock).mock.calls[0][0]).toBe(2); // index of 'bbbbbbbb'
     expect(result.current.syncedCount).toBe(1);
     expect(mockMarkFingerprintSynced).toHaveBeenCalledTimes(1);
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('bbbbbbbb');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'bbbbbbbb');
   });
 
   it('goes straight to complete with 0 synced when all dives are already known', async () => {
@@ -168,6 +176,8 @@ describe('useSync', () => {
     // syncedCount counts API successes only
     expect(result.current.syncedCount).toBe(0);
     expect(mockMarkFingerprintSynced).not.toHaveBeenCalled();
+    expect(mockEnqueueUpload).toHaveBeenCalledTimes(3);
+    expect(mockEnqueueUpload).toHaveBeenCalledWith('user-1', expect.any(Object));
   });
 
   it('exposes currentDiveIndex and totalDives during download', async () => {
@@ -191,5 +201,17 @@ describe('useSync', () => {
       resolveDownload({ rawBytes: 'base64' });
     });
     await waitFor(() => expect(result.current.state).toBe('complete'));
+  });
+
+  it('throws unauthenticated when user.id is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    const { result } = renderHook(() => useSync(), { wrapper });
+    await act(async () => {
+      result.current.startSync();
+      await new Promise((r) => setTimeout(r, 0));
+      fireDiscovered();
+    });
+    await waitFor(() => expect(result.current.state).toBe('error'));
+    expect(result.current.error).toBe('unauthenticated');
   });
 });
