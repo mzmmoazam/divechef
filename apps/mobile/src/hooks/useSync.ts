@@ -75,11 +75,17 @@ export function useSync() {
     setTotalDives(0);
     setDiscoveredDevices([]);
 
+    // Defensive guard for an unreachable state — Sync screen sits behind
+    // auth in the nav stack. The error code 'unauthenticated' is intentionally
+    // not in SyncScreen's i18n map; it falls through to t('common.error').
     if (!user?.id) {
       setState('error');
       setError('unauthenticated');
       return;
     }
+    // Capture once for the duration of the sync so a mid-sync logout can't
+    // cause in-flight markFingerprintSynced/enqueueUpload calls to attribute
+    // the upload to a different user than the one whose token authenticated it.
     const userId = user.id;
 
     try {

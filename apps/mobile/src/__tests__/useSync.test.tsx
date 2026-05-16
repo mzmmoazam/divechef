@@ -203,13 +203,14 @@ describe('useSync', () => {
     await waitFor(() => expect(result.current.state).toBe('complete'));
   });
 
-  it('throws unauthenticated when user.id is null', async () => {
+  it('sets unauthenticated error when user.id is null', async () => {
+    // Auth guard short-circuits before startScan, so no discovery handler
+    // is ever registered — fireDiscovered() is intentionally not called.
     mockUseAuth.mockReturnValue({ user: null });
     const { result } = renderHook(() => useSync(), { wrapper });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
-      fireDiscovered();
     });
     await waitFor(() => expect(result.current.state).toBe('error'));
     expect(result.current.error).toBe('unauthenticated');
