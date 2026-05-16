@@ -2,45 +2,96 @@ import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'divechef_queue.db';
 
-let db: SQLite.SQLiteDatabase | null = null;
+// Cache the in-flight Promise (not the resolved value) so concurrent
+// callers at app boot don't both try to migrate.
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync(DB_NAME);
-    await db.execAsync(`
+async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
+  const cols = await database.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(upload_queue)'
+  );
+  const colNames = new Set(cols.map((c) => c.name));
+
+  if (colNames.size === 0) {
+    // Fresh install.
+    await database.execAsync(`
       CREATE TABLE IF NOT EXISTS upload_queue (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        payload TEXT NOT NULL,
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    TEXT NOT NULL,
+        payload    TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        attempts INTEGER NOT NULL DEFAULT 0
+        attempts   INTEGER NOT NULL DEFAULT 0
       );
     `);
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_id ON upload_queue(user_id)'
+    );
+    return;
   }
-  return db;
-}
 
-export async function enqueueUpload(payload: unknown): Promise<void> {
-  const database = await getDb();
+  if (colNames.has('user_id')) {
+    // Already migrated. Defensively drop any rows that snuck in unscoped.
+    await database.runAsync(
+      'DELETE FROM upload_queue WHERE user_id IS NULL'
+    );
+    return;
+  }
+
+  // Pre-migration: every row is unscoped legacy data with a NULL bearer-token
+  // attribution. We refuse to flush them under a different user, so DELETE.
+  // SQLite cannot ALTER TABLE … ADD COLUMN with NOT NULL without a default,
+  // so add the column nullable then DELETE the legacy rows. The schema's
+  // NOT NULL constraint applies only to subsequent inserts.
+  await database.execAsync(
+    'ALTER TABLE upload_queue ADD COLUMN user_id TEXT'
+  );
+  await database.execAsync(
+    'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_id ON upload_queue(user_id)'
+  );
   await database.runAsync(
-    'INSERT INTO upload_queue (payload) VALUES (?)',
-    [JSON.stringify(payload)]
+    'DELETE FROM upload_queue WHERE user_id IS NULL'
   );
 }
 
-export async function getPendingCount(): Promise<number> {
+function getDb(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const d = await SQLite.openDatabaseAsync(DB_NAME);
+      await ensureMigrated(d);
+      return d;
+    })();
+  }
+  return dbPromise;
+}
+
+export async function enqueueUpload(userId: string, payload: unknown): Promise<void> {
+  if (!userId) throw new Error('queue: userId is required');
+  const database = await getDb();
+  await database.runAsync(
+    'INSERT INTO upload_queue (user_id, payload) VALUES (?, ?)',
+    [userId, JSON.stringify(payload)]
+  );
+}
+
+export async function getPendingCount(userId: string): Promise<number> {
+  if (!userId) throw new Error('queue: userId is required');
   const database = await getDb();
   const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM upload_queue'
+    'SELECT COUNT(*) as count FROM upload_queue WHERE user_id = ?',
+    [userId]
   );
   return result?.count ?? 0;
 }
 
 export async function flushQueue(
+  userId: string,
   uploadFn: (payload: unknown) => Promise<boolean>
 ): Promise<{ succeeded: number; failed: number }> {
+  if (!userId) throw new Error('queue: userId is required');
   const database = await getDb();
   const rows = await database.getAllAsync<{ id: number; payload: string; attempts: number }>(
-    'SELECT id, payload, attempts FROM upload_queue ORDER BY created_at ASC'
+    'SELECT id, payload, attempts FROM upload_queue WHERE user_id = ? ORDER BY created_at ASC',
+    [userId]
   );
 
   let succeeded = 0;
@@ -72,7 +123,13 @@ export async function flushQueue(
   return { succeeded, failed };
 }
 
-export async function clearQueue(): Promise<void> {
+export async function clearQueue(userId: string): Promise<void> {
+  if (!userId) throw new Error('queue: userId is required');
   const database = await getDb();
-  await database.runAsync('DELETE FROM upload_queue');
+  await database.runAsync('DELETE FROM upload_queue WHERE user_id = ?', [userId]);
+}
+
+/** Test-only: forces re-init on next call. */
+export function __resetQueueForTests(): void {
+  dbPromise = null;
 }
