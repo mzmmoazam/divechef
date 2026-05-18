@@ -55,15 +55,18 @@ jest.mock('../hooks/useAuth', () => ({
 // Mock queue
 const mockEnqueueUpload = jest.fn().mockResolvedValue(undefined);
 jest.mock('../services/queue', () => ({
-  enqueueUpload: (userId: string, payload: unknown) => mockEnqueueUpload(userId, payload),
+  enqueueUpload: (userId: string, deviceSerial: string, payload: unknown) =>
+    mockEnqueueUpload(userId, deviceSerial, payload),
 }));
 
 // Mock syncedDives — control the fingerprint set per test
 const mockGetSyncedFingerprints = jest.fn();
 const mockMarkFingerprintSynced = jest.fn();
 jest.mock('../services/syncedDives', () => ({
-  getSyncedFingerprints: (userId: string) => mockGetSyncedFingerprints(userId),
-  markFingerprintSynced: (userId: string, fp: string) => mockMarkFingerprintSynced(userId, fp),
+  getSyncedFingerprints: (userId: string, deviceSerial: string) =>
+    mockGetSyncedFingerprints(userId, deviceSerial),
+  markFingerprintSynced: (userId: string, deviceSerial: string, fp: string) =>
+    mockMarkFingerprintSynced(userId, deviceSerial, fp),
 }));
 
 import { DiveComputerNative } from '../native';
@@ -97,9 +100,14 @@ beforeEach(() => {
   (DiveComputerNative.downloadDive as jest.Mock).mockResolvedValue({ rawBytes: 'base64' });
 });
 
+const TEST_SERIAL = 'test-serial';
+
 describe('useSync', () => {
   it('downloads all dives when local fingerprint set is empty', async () => {
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       // Let scan promise register, then fire discovery
@@ -110,9 +118,9 @@ describe('useSync', () => {
     expect((DiveComputerNative.downloadDive as jest.Mock).mock.calls.length).toBe(3);
     expect(result.current.syncedCount).toBe(3);
     expect(mockMarkFingerprintSynced).toHaveBeenCalledTimes(3);
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'aaaaaaaa');
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'bbbbbbbb');
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'cccccccc');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', TEST_SERIAL, 'aaaaaaaa');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', TEST_SERIAL, 'bbbbbbbb');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', TEST_SERIAL, 'cccccccc');
   });
 
   it('fails open when getSyncedFingerprints throws (DB read error)', async () => {
@@ -121,6 +129,9 @@ describe('useSync', () => {
     // hook (useSync.ts) protects against a leaked BLE connection.
     mockGetSyncedFingerprints.mockRejectedValue(new Error('db read failed'));
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -134,6 +145,9 @@ describe('useSync', () => {
   it('skips already-synced dives', async () => {
     mockGetSyncedFingerprints.mockResolvedValue(new Set(['aaaaaaaa', 'cccccccc']));
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -144,7 +158,7 @@ describe('useSync', () => {
     expect((DiveComputerNative.downloadDive as jest.Mock).mock.calls[0][0]).toBe(2); // index of 'bbbbbbbb'
     expect(result.current.syncedCount).toBe(1);
     expect(mockMarkFingerprintSynced).toHaveBeenCalledTimes(1);
-    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', 'bbbbbbbb');
+    expect(mockMarkFingerprintSynced).toHaveBeenCalledWith('user-1', TEST_SERIAL, 'bbbbbbbb');
   });
 
   it('goes straight to complete with 0 synced when all dives are already known', async () => {
@@ -152,6 +166,9 @@ describe('useSync', () => {
       new Set(['aaaaaaaa', 'bbbbbbbb', 'cccccccc'])
     );
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -166,6 +183,9 @@ describe('useSync', () => {
   it('does NOT mark fingerprint synced when upload is queued (api fails)', async () => {
     mockApiPost.mockRejectedValue(new Error('network'));
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -177,7 +197,7 @@ describe('useSync', () => {
     expect(result.current.syncedCount).toBe(0);
     expect(mockMarkFingerprintSynced).not.toHaveBeenCalled();
     expect(mockEnqueueUpload).toHaveBeenCalledTimes(3);
-    expect(mockEnqueueUpload).toHaveBeenCalledWith('user-1', expect.any(Object));
+    expect(mockEnqueueUpload).toHaveBeenCalledWith('user-1', TEST_SERIAL, expect.any(Object));
   });
 
   it('exposes currentDiveIndex and totalDives during download', async () => {
@@ -186,6 +206,9 @@ describe('useSync', () => {
       new Promise<{ rawBytes: string }>((r) => { resolveDownload = r; })
     );
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -208,11 +231,30 @@ describe('useSync', () => {
     // is ever registered — fireDiscovered() is intentionally not called.
     mockUseAuth.mockReturnValue({ user: null });
     const { result } = renderHook(() => useSync(), { wrapper });
+    act(() => {
+      result.current.setSelectedDeviceSerial(TEST_SERIAL);
+    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
     });
     await waitFor(() => expect(result.current.state).toBe('error'));
     expect(result.current.error).toBe('unauthenticated');
+  });
+
+  it('sets no_device_selected error when selectedDeviceSerial is null', async () => {
+    // Device guard short-circuits before startScan — same defensive pattern
+    // as the unauthenticated guard. The error code falls through to
+    // t('common.error') in SyncScreen's i18n map.
+    const { result } = renderHook(() => useSync(), { wrapper });
+    // Intentionally do NOT call setSelectedDeviceSerial.
+    await act(async () => {
+      result.current.startSync();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await waitFor(() => expect(result.current.state).toBe('error'));
+    expect(result.current.error).toBe('no_device_selected');
+    // The auth guard should not have been the source.
+    expect(DiveComputerNative.startScan).not.toHaveBeenCalled();
   });
 });
