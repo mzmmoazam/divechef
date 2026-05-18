@@ -325,7 +325,7 @@ class ShearwaterPetrelManager(private val context: Context) {
 
     private fun dlog(message: String) {
         if (BuildConfig.DEBUG) {
-            Log.d("DiveChef", "PeregrineBleManager: $message")
+            Log.d("DiveChef", "ShearwaterPetrelManager: $message")
         }
     }
 
