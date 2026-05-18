@@ -28,6 +28,11 @@ export function useSync() {
   const [syncedCount, setSyncedCount] = useState(0);
   const [currentDiveIndex, setCurrentDiveIndex] = useState(0);
   const [totalDives, setTotalDives] = useState(0);
+  // Currently-selected device serial for the user's add-a-device flow.
+  // P1 wires this from the registered device once the multi-device flow
+  // ships; until then it stays null and startSync short-circuits with
+  // 'no_device_selected'. Tests inject via setSelectedDeviceSerial.
+  const [selectedDeviceSerial, setSelectedDeviceSerial] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const abortRef = useRef(false);
@@ -88,6 +93,18 @@ export function useSync() {
     // the upload to a different user than the one whose token authenticated it.
     const userId = user.id;
 
+    // Defensive guard for an unreachable state — Sync screen sits behind
+    // the add-a-device flow in P1's nav stack. The error code
+    // 'no_device_selected' is intentionally not in SyncScreen's i18n map;
+    // it falls through to t('common.error'). Same single-snapshot capture
+    // pattern as userId above.
+    if (!selectedDeviceSerial) {
+      setState('error');
+      setError('no_device_selected');
+      return;
+    }
+    const deviceSerial = selectedDeviceSerial;
+
     try {
       setState('scanning');
       await DiveComputerNative.startScan(SERVICE_UUID);
@@ -125,7 +142,7 @@ export function useSync() {
       // syncedDives failure as "nothing known" — the worst case is a
       // re-download of already-uploaded dives, which the server-side
       // dedup-by-fingerprint handles harmlessly.
-      const known = await getSyncedFingerprints(userId).catch(() => new Set<string>());
+      const known = await getSyncedFingerprints(userId, deviceSerial).catch(() => new Set<string>());
       const newDives = manifest.filter((e) => !known.has(e.fingerprintHex));
 
       if (newDives.length === 0) {
@@ -155,11 +172,11 @@ export function useSync() {
             await api.post('/api/dives', payload, {
               headers: { 'Content-Type': 'application/json' },
             });
-            await markFingerprintSynced(userId, entry.fingerprintHex);
+            await markFingerprintSynced(userId, deviceSerial, entry.fingerprintHex);
             synced++;
             setSyncedCount(synced);
           } catch {
-            await enqueueUpload(userId, payload);
+            await enqueueUpload(userId, deviceSerial, payload);
           }
 
           setState('downloading');
@@ -181,7 +198,7 @@ export function useSync() {
       const message = err instanceof Error ? err.message : 'unknown_error';
       setError(message);
     }
-  }, [queryClient, user?.id]);
+  }, [queryClient, user?.id, selectedDeviceSerial]);
 
   const cancel = useCallback(async () => {
     abortRef.current = true;
@@ -202,6 +219,8 @@ export function useSync() {
     syncedCount,
     currentDiveIndex,
     totalDives,
+    selectedDeviceSerial,
+    setSelectedDeviceSerial,
     startSync,
     cancel,
   };
