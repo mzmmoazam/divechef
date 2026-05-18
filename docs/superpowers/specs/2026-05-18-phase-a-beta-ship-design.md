@@ -57,6 +57,74 @@ Take the working code from Plans 1–3 + the post-Plan-3 fixes, give it a brand 
 
 ---
 
+## Multi-device architecture (Petrel family — hybrid C)
+
+The current code is single-device, Peregrine-only. We refactor for **multi-device per user across the Shearwater Petrel family** (Peregrine, Perdix, Petrel, Teric, Nerd) before shipping to beta. Same protocol family in libdc (`shearwater_petrel.c`), same byte layout, same LRE+XOR. We have only Peregrine hardware to test, so we ship saying "Peregrine: verified. Perdix/Teric/Petrel/Nerd: should work, unverified" — and we degrade gracefully on unknown models rather than refusing to connect.
+
+### What changes
+
+**Native module:**
+
+- Rename `PeregrineBLEManager` → `ShearwaterPetrelManager` (both iOS + Android).
+- Service UUID parameterization: list of known Shearwater BLE service UUIDs in a constants file. Scan iterates the list (or scans for all simultaneously). Peregrine UUID `FE25C237-…` is the verified one; we add Perdix/Teric/Petrel UUIDs as research surfaces them, defaulted-not-removed if any model fails to advertise on the expected UUID.
+- After connect: call `RDBI(ID_HARDWARE)` (already happens during `listDives()`) and dispatch a `model: 'peregrine' | 'perdix' | 'teric' | 'petrel' | 'nerd' | 'unknown'` discriminator from the hardware-ID byte pattern.
+- Expose `getDeviceInfo(): { model, serial, firmwareVersion, friendlyName }` to the JS layer right after `connect()` resolves.
+- Existing 86 protocol unit tests stay green — they exercise the protocol, not the device label. Rename is mechanical.
+
+**Backend (Plan 1 schema additions):**
+
+- New `user_devices` table: `(id, user_id, model, device_serial, friendly_name, registered_at, last_synced_at)`. Composite uniqueness on `(user_id, device_serial)`.
+- New endpoints under `/api/devices`:
+  - `POST /api/devices` — register a newly-discovered device. Body: `{ model, deviceSerial, friendlyName }`. Idempotent on `(user_id, deviceSerial)`.
+  - `GET /api/devices` — list current user's registered devices.
+  - `PATCH /api/devices/:id` — rename. Body: `{ friendlyName }`.
+  - `DELETE /api/devices/:id` — remove from inventory (does NOT delete the user's dives — those keep their `deviceSerial` reference for history).
+- `POST /api/dives` validates `meta.deviceSerial` matches a registered device for the authenticated user (auto-registers if not, with `model: 'unknown'` fallback so syncs never fail on the registration step).
+
+**Local DB schema migration:**
+
+- `synced_fingerprints` primary key changes from `(user_id, fingerprint)` to `(user_id, device_serial, fingerprint)`. Same destructive-migration pattern we used twice already (DROP + CREATE; legacy rows have no `device_serial` so they're not worth keeping).
+- `upload_queue` gains a `device_serial TEXT NOT NULL` column. Existing legacy rows get DELETE'd on first run (same precedent).
+- Both modules' public APIs add a `deviceSerial` parameter alongside the existing `userId`:
+  - `getSyncedFingerprints(userId, deviceSerial)`
+  - `markFingerprintSynced(userId, deviceSerial, fingerprint)`
+  - `enqueueUpload(userId, deviceSerial, payload)`
+  - `flushQueue(userId, deviceSerial, uploadFn)` and `getPendingCount(userId, deviceSerial)` similarly.
+
+**Mobile UX:**
+
+- **First-sync registration flow:** when a discovered device is selected and connected, the app reads its serial + model + firmware via `getDeviceInfo()`, calls `POST /api/devices` with a generated `friendlyName` (e.g., "Mohammad's Peregrine"), and caches the result locally.
+- **Sync screen:** if 0 devices registered → scan flow (existing). If 1 device → sync that one (existing). If ≥2 devices → device picker before scan ("Sync from which?").
+- **Profile screen:** new "Your dive computers" section listing each registered device with friendly name, model, serial (last 4), last sync date, rename, remove.
+
+### What this DOES NOT include
+
+- Non-Petrel-family Shearwater models or other vendors (Garmin, Suunto, Mares, Atomic) — those are different protocols, different libdc adapters. Phase B+ work.
+- Cross-device dive dedup on the backend (e.g., the same dive logged on two computers in a buddy pair). Each device's fingerprints are independent; the backend trusts `(user_id, deviceSerial, fingerprint)` as the dive identity.
+- Auto-discovery of "I bought a new Perdix" beyond the first scan working. If the user already has Peregrine registered and now scans for Perdix, the discovery flow auto-registers the second device.
+- "Sync all my computers" one-tap flow. Phase B.
+
+### Honest claim for the beta
+
+In the beta-tester docs and the marketing landing's feature list:
+
+> "DiveForge syncs with Shearwater Peregrine. Other Shearwater Petrel-family computers (Perdix, Petrel, Teric, Nerd) may work — get in touch if you want to try one."
+
+We don't claim verified multi-model support. We don't hide that the architecture is there. Tester expectations match reality.
+
+### Acceptance criteria
+
+1. Renamed `ShearwaterPetrelManager` exists on both platforms; 86 protocol tests still pass; type-check clean.
+2. `getDeviceInfo()` returns the correct `model: 'peregrine'` and a real serial when run against your Peregrine.
+3. Backend `user_devices` table exists; `POST/GET/PATCH/DELETE /api/devices` work end-to-end (covered by integration tests).
+4. Local mobile DB migrates: `synced_fingerprints` has the new composite PK, `upload_queue` has the new column, legacy rows are dropped.
+5. `useSync` threads `deviceSerial` through every cache call; `useQueueFlush` does too.
+6. Profile screen shows the registered Peregrine; rename works; remove works (and the user's dives stay).
+7. Sync screen handles zero / one / multiple registered devices correctly.
+8. The full Phase A test suite (~30+ unit tests, plus the new device + multi-device tests) is green.
+
+---
+
 ## P1 — Mobile UX rollout
 
 Apply the design system to all 6 screens. The current code uses generic React Native components; this is a per-screen polish pass, not a rewrite.
@@ -66,13 +134,13 @@ Apply the design system to all 6 screens. The current code uses generic React Na
 1. **Home** — locked via brainstorm mockup. Hero card for last dive, list of earlier dives, floating sync button, tab bar.
 2. **Trends** — Score series chart (Victory native), summary tip, 30-day stats row.
 3. **DiveDetail** — Depth profile chart, score breakdown, insight cards, raw stats row.
-4. **Profile** — User info, niveau, locale, logout, queue banner placement.
-5. **Sync** — State machine: idle → scanning → connecting → listing → downloading → uploading → complete → error. Each state gets its own treatment (locked: "Dive N of M" already shipped).
+4. **Profile** — User info, niveau, locale, logout, queue banner placement, **registered dive computers section** (rename, remove).
+5. **Sync** — State machine: idle → scanning → connecting → listing → downloading → uploading → complete → error. Each state gets its own treatment (locked: "Dive N of M" already shipped). **Device picker** prefix when ≥2 devices are registered; first-sync auto-registers the discovered device.
 6. **Auth (Login + Signup)** — Single-screen forms, Inter + cyan, friendly empty / loading states.
 
 ### Cross-cutting items
 
-- **Empty states** — every list screen needs one. "No dives yet — sync your Peregrine to get started" with sync CTA.
+- **Empty states** — every list screen needs one. "No dives yet — sync your dive computer to get started" with sync CTA.
 - **Loading states** — cyan spinners. No skeleton screens for v1 (overkill).
 - **Error states** — red icon + plain-language message. Retry CTA where applicable.
 - **`QueueBanner`** — already exists; restyle to match dark theme + cyan-tinted warning amber.
@@ -90,8 +158,10 @@ Apply the design system to all 6 screens. The current code uses generic React Na
 1. All 6 screens use only design tokens (no inline hex). Tokens live in `apps/mobile/src/theme/tokens.ts` and `apps/mobile/src/theme/index.ts`.
 2. The `theme/` module exports type-safe accessors so `<View style={{ backgroundColor: theme.bgElev }}>` is the pattern, not raw hex.
 3. The 6 primitive components live in `apps/mobile/src/components/ui/` and have at least one consumer each.
-4. The 86 native protocol tests + 29 JS tests stay green throughout.
-5. `pnpm typecheck` clean.
+4. Profile shows the registered Peregrine; rename + remove work; the user's dives are not deleted on remove.
+5. Sync screen renders device picker correctly across the 0 / 1 / ≥2 cases.
+6. The 86 native protocol tests + JS tests stay green throughout (test count grows with the device-scoping additions; baseline drift is fine, regressions aren't).
+7. `pnpm typecheck` clean.
 
 ---
 
@@ -171,6 +241,8 @@ For v1 with 2–3 testers and small dive counts, the 10s function timeout will h
 2. Mobile app pointed at the deployed `EXPO_PUBLIC_API_URL` syncs a dive end-to-end (BLE → POST `/api/dives` → row in Neon, raw bytes in R2).
 3. Database survives a redeploy (no data loss).
 4. R2 bucket has a real raw-bytes object after one synced dive.
+5. `user_devices` table exists; first sync auto-registers a row; `GET /api/devices` returns it; `PATCH` renames; `DELETE` removes from inventory while preserving `dives` rows.
+6. `POST /api/dives` rejects (or auto-registers via fallback) when `meta.deviceSerial` is missing or unrecognized — must not silently associate a dive with the wrong device.
 
 ---
 
@@ -243,18 +315,26 @@ The free path is fully viable for v1. The recommended path is what to upgrade to
 ```
 P0 (locked above)
    │
-   ├──> P1 — mobile UX rollout    (critical path; ~1.5–2 weeks)
+   ├──> M1 — Native rename + getDeviceInfo   (~2 days; serial)
+   │       │
+   │       └──> M2 — Local DB device_serial migration (~2 days; serial)
    │
-   └──> P2 — marketing landing    (parallel; ~3–5 days)
+   ├──> M3 — Backend user_devices table + CRUD (~2-3 days; parallel with M1/M2)
+   │
+   ├──> P1 — mobile UX rollout + device picker + Profile inventory   (critical path; ~2-3 weeks; needs M1+M2+M3)
+   │
+   └──> P2 — marketing landing                  (parallel; ~3–5 days; needs P0 only)
 
-P3 — backend deploy + DB         (independent; ~2–3 days; can run in parallel with P1/P2)
+P3 — backend deploy + DB                       (~2–3 days; depends on M3 schema being final)
 
-P4 — beta distribution           (depends on P1 + P3; ~2–3 days)
+P4 — beta distribution                         (~2–3 days; depends on P1 + P3)
 ```
 
-Critical path = P1. P2 and P3 land along the way. P4 is the final gate.
+The "M" tasks (M1/M2/M3) are the multi-device foundation work that landed in this spec revision. They feed P1 and P3 but don't extend the calendar end-date materially because they run in parallel with the design-system rollout.
 
-Each P-letter gets its own implementation plan after this spec is approved.
+Critical path: M1 → M2 → P1 → P4. P2 and P3 finish in parallel.
+
+Each labeled task gets its own implementation plan after this spec is approved.
 
 ---
 
@@ -273,6 +353,8 @@ Each P-letter gets its own implementation plan after this spec is approved.
 - **EAS free tier 30 builds/month.** Active development might consume that on iOS+Android combined. Mitigation: be deliberate about builds; combine fixes before rebuilding. Upgrade to EAS Production tier ($29/mo) if hit consistently.
 - **Personal Apple cert 7-day expiry.** If the recommended TestFlight path is rejected, expect to rebuild and re-trust weekly during the beta. Honest UX cost; document in tester instructions.
 - **Brand drift between mobile and web.** Sharing tokens via `packages/shared/tokens.ts` mitigates. If the web team and mobile team drift on a single token, fix at the package and both pick up.
+- **Untested Petrel-family models (Perdix, Petrel, Teric, Nerd).** We ship architectural support without hardware to verify against. Mitigations: (a) the protocol code is identical for the family per libdc — high prior probability it works; (b) `model: 'unknown'` fallback prevents refusal-to-connect on unrecognized hardware IDs; (c) tester docs and marketing copy explicitly say "Peregrine verified, others may work, get in touch." Cost of being wrong: a Perdix/Teric tester reports a failure; we triage and fix specifically.
+- **Service UUID research debt.** The non-Peregrine Petrel-family service UUIDs aren't in our hands. Phase A ships with Peregrine's `FE25C237-…` UUID hardcoded as the only scan target. As soon as we get research / hardware access, additional UUIDs go into the constants file and the scan iterates them. Until then, "scan" finds Peregrine only — Perdix/Teric users would see "no device found" even though the architecture supports them. Document explicitly in tester instructions.
 
 ---
 
@@ -284,4 +366,5 @@ Each P-letter gets its own implementation plan after this spec is approved.
 4. Backend + DB deployed; mobile app works end-to-end against the deployed backend.
 5. Beta build distributable to 2–3 testers on iOS + Android; one full sync round-trip per tester succeeds.
 6. Crashes surface in Sentry within minutes.
-7. Total recurring cost: $0 (with the option to spend $99 + $25 one-time if friction warrants).
+7. Multi-device architecture in place: native module renamed to `ShearwaterPetrelManager`, `getDeviceInfo()` returns model + serial, `user_devices` table + CRUD endpoints exist, local DB tables device-scoped, Profile shows the registered device, Sync screen handles the 0/1/≥2 device cases. Peregrine verified end-to-end; Perdix/Teric/Petrel/Nerd marked unverified in tester-facing copy.
+8. Total recurring cost: $0 (with the option to spend $99 + $25 one-time if friction warrants).
