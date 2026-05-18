@@ -140,6 +140,7 @@ describe('queue', () => {
   beforeEach(() => {
     (SQLite as unknown as { __mockReset: () => void }).__mockReset();
     __resetQueueForTests();
+    mockGetSyncedFingerprints.mockClear();
     mockGetSyncedFingerprints.mockResolvedValue(new Set<string>());
   });
 
@@ -244,6 +245,7 @@ describe('queue', () => {
   it('flushQueue falls back to normal upload when getSyncedFingerprints throws', async () => {
     await enqueueUpload(U1, { fingerprintHex: 'fp-X' });
     mockGetSyncedFingerprints.mockRejectedValue(new Error('db read failed'));
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
     const uploadFn = jest.fn().mockResolvedValue(true);
     const result = await flushQueue(U1, uploadFn);
@@ -252,6 +254,12 @@ describe('queue', () => {
     expect(uploadFn).toHaveBeenCalledWith({ fingerprintHex: 'fp-X' });
     expect(result.succeeded).toBe(1);
     expect(result.failed).toBe(0);
+    // Surface the failure rather than silently swallowing — engineers need a signal.
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('getSyncedFingerprints failed'),
+      expect.any(Error)
+    );
+    warnSpy.mockRestore();
   });
 
   it('flushQueue passes through rows that have no fingerprintHex', async () => {

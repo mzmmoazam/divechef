@@ -102,10 +102,19 @@ export async function flushQueue(
     [userId]
   );
 
-  // Fetch the user's already-synced fingerprint set once. If this fails,
-  // fall back to an empty set so the flush still runs as before.
+  // Snapshot the user's already-synced fingerprint set once at flush start.
+  // Concurrent direct-path syncs that mark new fingerprints during this flush
+  // are reconciled server-side (the queued POST will see a duplicate and
+  // surface as failed++ on this pass; next foregrounding picks it up).
+  // If the read fails (corrupt DB / migration didn't run / code defect), we
+  // fall back to an empty set so the flush still runs — but we WARN rather
+  // than swallow silently, because that's a real signal worth surfacing.
   const known: Set<string> = await getSyncedFingerprints(userId).catch(
-    () => new Set<string>()
+    (err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn('queue: getSyncedFingerprints failed; flushing without dedup', err);
+      return new Set<string>();
+    }
   );
 
   let succeeded = 0;
