@@ -31,17 +31,19 @@ model User {
 }
 
 model Device {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
-  bleAddress   String
-  model        String
-  serialNumber String?
-  nickname     String?
-  lastSyncAt   DateTime?
-  createdAt    DateTime  @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model           String
+  serialNumber    String
+  friendlyName    String?
+  scanName        String?
+  firmwareVersion String?
+  registeredAt    DateTime  @default(now())
+  lastSyncAt      DateTime?
 
-  @@unique([userId, bleAddress])
+  @@unique([userId, serialNumber])
+  @@index([userId])
 }
 
 model Dive {
