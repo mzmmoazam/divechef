@@ -17,47 +17,47 @@ async function ensureMigrated(database: SQLite.SQLiteDatabase): Promise<void> {
     // Fresh install.
     await database.execAsync(`
       CREATE TABLE IF NOT EXISTS upload_queue (
-        id         INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id    TEXT NOT NULL,
-        payload    TEXT NOT NULL,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        attempts   INTEGER NOT NULL DEFAULT 0
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id       TEXT NOT NULL,
+        device_serial TEXT NOT NULL,
+        payload       TEXT NOT NULL,
+        created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+        attempts      INTEGER NOT NULL DEFAULT 0
       );
     `);
     await database.execAsync(
-      'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_id ON upload_queue(user_id)'
+      'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_device ON upload_queue(user_id, device_serial)'
     );
     return;
   }
 
-  if (colNames.has('user_id')) {
+  if (colNames.has('device_serial')) {
     // Already migrated. Defensively drop any rows that snuck in unscoped.
     await database.runAsync(
-      'DELETE FROM upload_queue WHERE user_id IS NULL'
+      'DELETE FROM upload_queue WHERE device_serial IS NULL'
     );
     return;
   }
 
-  // Pre-migration: every row is unscoped legacy data with a NULL bearer-token
-  // attribution. We refuse to flush them under a different user, so DELETE.
-  // NOTE: this discards any pending uploads queued by a pre-migration build of
-  // the app. Acceptable per spec — those rows have no user attribution and
-  // could not be safely flushed.
+  // Pre-M2: post-M1 user-scoped table without device_serial. Add the column,
+  // create the new (user_id, device_serial) index, and drop every existing
+  // row — they have no device attribution and can't be safely flushed under
+  // a specific device's scope.
   //
   // SQLite cannot ALTER TABLE … ADD COLUMN with NOT NULL without a default,
   // so the added column is nullable at the database layer. The schema's
   // NOT NULL constraint applies only to the fresh-install CREATE TABLE.
   // For migrated databases, NOT NULL is enforced at the application layer
-  // by enqueueUpload's userId guard — any caller bypassing that function
-  // could insert a NULL user_id silently.
+  // by enqueueUpload's deviceSerial guard — any caller bypassing that
+  // function could insert a NULL device_serial silently.
   await database.execAsync(
-    'ALTER TABLE upload_queue ADD COLUMN user_id TEXT'
+    'ALTER TABLE upload_queue ADD COLUMN device_serial TEXT'
   );
   await database.execAsync(
-    'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_id ON upload_queue(user_id)'
+    'CREATE INDEX IF NOT EXISTS idx_upload_queue_user_device ON upload_queue(user_id, device_serial)'
   );
   await database.runAsync(
-    'DELETE FROM upload_queue WHERE user_id IS NULL'
+    'DELETE FROM upload_queue WHERE device_serial IS NULL'
   );
 }
 
@@ -72,44 +72,56 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
-export async function enqueueUpload(userId: string, payload: unknown): Promise<void> {
+export async function enqueueUpload(
+  userId: string,
+  deviceSerial: string,
+  payload: unknown
+): Promise<void> {
   if (!userId) throw new Error('queue: userId is required');
+  if (!deviceSerial) throw new Error('queue: deviceSerial is required');
   const database = await getDb();
   await database.runAsync(
-    'INSERT INTO upload_queue (user_id, payload) VALUES (?, ?)',
-    [userId, JSON.stringify(payload)]
+    'INSERT INTO upload_queue (user_id, device_serial, payload) VALUES (?, ?, ?)',
+    [userId, deviceSerial, JSON.stringify(payload)]
   );
 }
 
-export async function getPendingCount(userId: string): Promise<number> {
+export async function getPendingCount(
+  userId: string,
+  deviceSerial: string
+): Promise<number> {
   if (!userId) throw new Error('queue: userId is required');
+  if (!deviceSerial) throw new Error('queue: deviceSerial is required');
   const database = await getDb();
   const result = await database.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM upload_queue WHERE user_id = ?',
-    [userId]
+    'SELECT COUNT(*) as count FROM upload_queue WHERE user_id = ? AND device_serial = ?',
+    [userId, deviceSerial]
   );
   return result?.count ?? 0;
 }
 
 export async function flushQueue(
   userId: string,
+  deviceSerial: string,
   uploadFn: (payload: unknown) => Promise<boolean>
 ): Promise<{ succeeded: number; failed: number }> {
   if (!userId) throw new Error('queue: userId is required');
+  if (!deviceSerial) throw new Error('queue: deviceSerial is required');
   const database = await getDb();
   const rows = await database.getAllAsync<{ id: number; payload: string; attempts: number }>(
-    'SELECT id, payload, attempts FROM upload_queue WHERE user_id = ? ORDER BY created_at ASC',
-    [userId]
+    'SELECT id, payload, attempts FROM upload_queue WHERE user_id = ? AND device_serial = ? ORDER BY created_at ASC',
+    [userId, deviceSerial]
   );
 
-  // Snapshot the user's already-synced fingerprint set once at flush start.
-  // Concurrent direct-path syncs that mark new fingerprints during this flush
-  // are reconciled server-side (the queued POST will see a duplicate and
-  // surface as failed++ on this pass; next foregrounding picks it up).
+  // Snapshot the user's already-synced fingerprint set once at flush start,
+  // scoped to the current device. Concurrent direct-path syncs that mark new
+  // fingerprints during this flush are reconciled server-side (the queued
+  // POST will see a duplicate and surface as failed++ on this pass; next
+  // foregrounding picks it up).
   // If the read fails (corrupt DB / migration didn't run / code defect), we
   // fall back to an empty set so the flush still runs — but we WARN rather
   // than swallow silently, because that's a real signal worth surfacing.
-  const known: Set<string> = await getSyncedFingerprints(userId).catch(
+  const known: Set<string> = await getSyncedFingerprints(userId, deviceSerial).catch(
     (err: unknown) => {
       // eslint-disable-next-line no-console
       console.warn('queue: getSyncedFingerprints failed; flushing without dedup', err);
@@ -162,10 +174,14 @@ export async function flushQueue(
   return { succeeded, failed };
 }
 
-export async function clearQueue(userId: string): Promise<void> {
+export async function clearQueue(userId: string, deviceSerial: string): Promise<void> {
   if (!userId) throw new Error('queue: userId is required');
+  if (!deviceSerial) throw new Error('queue: deviceSerial is required');
   const database = await getDb();
-  await database.runAsync('DELETE FROM upload_queue WHERE user_id = ?', [userId]);
+  await database.runAsync(
+    'DELETE FROM upload_queue WHERE user_id = ? AND device_serial = ?',
+    [userId, deviceSerial]
+  );
 }
 
 /** Test-only: forces re-init on next call. */
