@@ -63,7 +63,7 @@ final class ShearwaterPetrelManager: NSObject {
     private var scanServiceUUID: CBUUID?
 
     /// Serial queue for thread-safety. All state mutations and CB delegate work happen here.
-    private let queue = DispatchQueue(label: "com.divechef.peregrine-ble", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.divechef.shearwater-ble", qos: .userInitiated)
 
     /// Discovered peripherals cache (for connect-by-identifier).
     private var discoveredPeripherals: [String: CBPeripheral] = [:]
