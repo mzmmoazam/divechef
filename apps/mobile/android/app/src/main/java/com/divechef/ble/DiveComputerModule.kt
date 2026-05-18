@@ -131,6 +131,24 @@ class DiveComputerModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun getDeviceInfo(promise: Promise) {
+        scope.launch {
+            try {
+                val manager = getOrCreateManager()
+                val info = manager.getDeviceInfo()
+                val result = Arguments.createMap().apply {
+                    putString("scanName", info.scanName)
+                    putString("serial", info.serial)
+                    putString("firmwareVersion", info.firmwareVersion)
+                }
+                promise.resolve(result)
+            } catch (e: Exception) {
+                promise.reject("DEVICE_INFO_ERROR", e.message, e)
+            }
+        }
+    }
+
+    @ReactMethod
     fun listDives(promise: Promise) {
         scope.launch {
             try {
