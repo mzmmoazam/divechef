@@ -6,6 +6,12 @@
 **Status:** Ready for execution.
 **Spec:** `docs/superpowers/specs/2026-05-18-phase-a-beta-ship-design.md` (Multi-device architecture section).
 
+> **Worktree note:** If executing this plan in a fresh worktree, run
+> `bash scripts/bootstrap-worktree.sh` from the worktree root before any
+> `xcodebuild` or `gradlew` command. The script copies gitignored
+> Expo-regenerated iOS/Android build inputs from main and runs
+> `pod install`.
+
 **Goal:** Reshape the BLE-facing surface area for multi-device readiness — rename `PeregrineBLEManager` to `ShearwaterPetrelManager`, add a shared `parseShearwaterModel` parser + verification-tier helper to `@divechef/shared`, and expose a new `getDeviceInfo()` native method that returns `{ scanName, serial, firmwareVersion }` so the upcoming registration flow can identify the connected device before `listDives()` runs.
 
 **Architecture:** The protocol code (LRE+XOR, manifest, RDBI/WDBI, block download) is identical across the Shearwater Petrel family — the rename is honest labeling, not new logic. The shared parser lives in TypeScript so iOS, Android, and the JS bridge agree on a single prefix table. `getDeviceInfo()` performs its own RDBI handshake (serial + firmware) so the registration flow doesn't depend on `listDives()` having run.

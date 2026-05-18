@@ -7,6 +7,12 @@
 **Spec:** `docs/superpowers/specs/2026-05-18-phase-a-beta-ship-design.md` (Multi-device architecture > Backend).
 **Depends on:** Nothing in M1/M2 — backend stack is independent. Can run in parallel.
 
+> **Worktree note:** If executing this plan in a fresh worktree, run
+> `bash scripts/bootstrap-worktree.sh` from the worktree root before any
+> `xcodebuild` or `gradlew` command. The script copies gitignored
+> Expo-regenerated iOS/Android build inputs from main and runs
+> `pod install`.
+
 **Goal:** Normalize the existing `Device` Prisma model to match the spec's identity contract (use the RDBI-read serial number as the device identity, not the unstable BLE address), and add the four `/api/devices` REST endpoints that the mobile add-a-device flow (P1) calls.
 
 **Architecture:** The schema already has a `Device` model from earlier scaffolding, but its identity field is `bleAddress` — Android's BLE peripheral identifier rotates (random/resolvable addresses), so it's a poor identity choice. Switch to `serialNumber` (NOT NULL, hex-encoded RDBI bytes from the mobile `getDeviceInfo()`) with `(userId, serialNumber)` uniqueness. Drop `bleAddress`. Add four endpoints under `app/api/devices/`. `POST /api/dives` validates `meta.deviceSerial` against the user's registered devices.
