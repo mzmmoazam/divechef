@@ -16,14 +16,14 @@ class DiveComputerModule(reactContext: ReactApplicationContext) :
     override fun getName(): String = "DiveComputer"
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var bleManager: PeregrineBleManager? = null
+    private var bleManager: ShearwaterPetrelManager? = null
     private var cachedManifest: List<ManifestRecord> = emptyList()
     private var cachedBaseAddr: Long = 0L
     private var cachedFirmwareVersion: String? = null
 
-    private fun getOrCreateManager(): PeregrineBleManager {
+    private fun getOrCreateManager(): ShearwaterPetrelManager {
         if (bleManager == null) {
-            bleManager = PeregrineBleManager(reactApplicationContext)
+            bleManager = ShearwaterPetrelManager(reactApplicationContext)
         }
         return bleManager!!
     }
@@ -128,6 +128,24 @@ class DiveComputerModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun isConnected(promise: Promise) {
         promise.resolve(bleManager?.isConnected() ?: false)
+    }
+
+    @ReactMethod
+    fun getDeviceInfo(promise: Promise) {
+        scope.launch {
+            try {
+                val manager = getOrCreateManager()
+                val info = manager.getDeviceInfo()
+                val result = Arguments.createMap().apply {
+                    putString("scanName", info.scanName)
+                    putString("serial", info.serial)
+                    putString("firmwareVersion", info.firmwareVersion)
+                }
+                promise.resolve(result)
+            } catch (e: Exception) {
+                promise.reject("DEVICE_INFO_ERROR", e.message, e)
+            }
+        }
     }
 
     @ReactMethod

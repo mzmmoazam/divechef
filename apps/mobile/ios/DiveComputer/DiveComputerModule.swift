@@ -14,8 +14,8 @@ class DiveComputerModule: RCTEventEmitter {
 
     // MARK: - BLE Manager
 
-    private lazy var manager: PeregrineBLEManager = {
-        let m = PeregrineBLEManager()
+    private lazy var manager: ShearwaterPetrelManager = {
+        let m = ShearwaterPetrelManager()
         m.onDiscovered = { [weak self] identifier, name, rssi in
             let body: [String: Any] = [
                 "identifier": identifier,
@@ -77,6 +77,22 @@ class DiveComputerModule: RCTEventEmitter {
     @objc func isConnected(_ resolve: @escaping RCTPromiseResolveBlock,
                            reject: @escaping RCTPromiseRejectBlock) {
         resolve(manager.isReady)
+    }
+
+    @objc func getDeviceInfo(_ resolve: @escaping RCTPromiseResolveBlock,
+                             reject: @escaping RCTPromiseRejectBlock) {
+        Task {
+            do {
+                let info = try await manager.getDeviceInfo()
+                resolve([
+                    "scanName": info.scanName as Any,
+                    "serial": info.serial,
+                    "firmwareVersion": info.firmwareVersion as Any,
+                ])
+            } catch {
+                reject("DEVICE_INFO_ERROR", error.localizedDescription, error)
+            }
+        }
     }
 
     @objc func listDives(_ resolve: @escaping RCTPromiseResolveBlock,

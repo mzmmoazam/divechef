@@ -1,5 +1,12 @@
-// PeregrineBLEManager.swift
-// DiveChef — Production BLE layer for Shearwater Peregrine dive computers.
+// ShearwaterPetrelManager.swift
+// DiveChef — Production BLE layer for the Shearwater Petrel-family dive computers.
+//
+// All BLE-capable Shearwater watches in the Petrel family (Peregrine,
+// Perdix/AI/2, Petrel 2/3, Teric, Nerd 2, Tern) advertise on the same
+// service UUID and speak the same protocol per libdivecomputer's
+// shearwater_petrel.c. This class implements that one protocol; model
+// disambiguation happens in the JS layer via parseShearwaterModel
+// against the BLE-advertised GAP name.
 //
 // Adapted from spike/0c-ble-protocol/swift-sources/PeregrineClient.swift.
 // Removes SwiftUI/Combine dependencies, logging, auto-connect behavior.
@@ -16,9 +23,9 @@ private func dlog(_ message: @autoclosure () -> String) {
     #endif
 }
 
-// MARK: - PeregrineBLEManager
+// MARK: - ShearwaterPetrelManager
 
-final class PeregrineBLEManager: NSObject {
+final class ShearwaterPetrelManager: NSObject {
 
     // MARK: - Constants
 
@@ -96,7 +103,7 @@ final class PeregrineBLEManager: NSObject {
 
     private static let scanTimeoutSec: TimeInterval = 15
 
-    /// Start scanning for Peregrine peripherals. Discovered peripherals are reported via onDiscovered.
+    /// Start scanning for Shearwater Petrel-family peripherals. Discovered peripherals are reported via onDiscovered.
     /// If no device is discovered within 15 seconds, emits a `diveComputerDisconnected` event
     /// with reason `no_device_found`.
     func startScan(serviceUuid: String? = nil) {
@@ -185,6 +192,34 @@ final class PeregrineBLEManager: NSObject {
     }
 
     // MARK: - Public actions (Layer 3)
+
+    /// Returns identifying facts about the connected device. Reads serial +
+    /// firmware via RDBI; the scan name is the BLE GAP name observed during
+    /// scan. Used by the add-a-device flow to cross-check the user-picked
+    /// model and to register the device with the backend.
+    ///
+    /// Must be called after a successful `connect()` and before any other
+    /// Layer-3 method (the RDBI handshake doubles as a connectivity probe).
+    func getDeviceInfo() async throws -> (scanName: String?, serial: String, firmwareVersion: String?) {
+        guard isReady else { throw PeregrineProtocolError.notConnected }
+
+        // Scan name comes from the connected peripheral; nil if iOS doesn't
+        // expose it (e.g. some restored connection paths).
+        let scanName = peripheral?.name
+
+        // Serial as hex string of the raw bytes — stable across firmware
+        // formatting differences. Backend stores the hex form.
+        let serialBytes = try await rdbi(id: Peregrine.ID_SERIAL)
+        let serial = serialBytes.map { String(format: "%02x", $0) }.joined()
+
+        // Firmware as ASCII; trim trailing whitespace/nulls if any.
+        let firmwareBytes = try await rdbi(id: Peregrine.ID_FIRMWARE)
+        let firmwareVersion = String(data: firmwareBytes, encoding: .ascii)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        self.firmwareVersion = firmwareVersion  // cache; listDives also reads but that's fine
+
+        return (scanName: scanName, serial: serial, firmwareVersion: firmwareVersion)
+    }
 
     /// Discover dives on the device. Reads serial/firmware/hardware/logupload, then the
     /// manifest. Returns array of (index, address, fingerprintHex) tuples.
@@ -591,7 +626,7 @@ final class PeregrineBLEManager: NSObject {
 
 // MARK: - CBCentralManagerDelegate
 
-extension PeregrineBLEManager: CBCentralManagerDelegate {
+extension ShearwaterPetrelManager: CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if central.state == .poweredOn, pendingScan {
@@ -657,7 +692,7 @@ extension PeregrineBLEManager: CBCentralManagerDelegate {
 
 // MARK: - CBPeripheralDelegate
 
-extension PeregrineBLEManager: CBPeripheralDelegate {
+extension ShearwaterPetrelManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let e = error {

@@ -16,8 +16,18 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Production BLE layer for the Shearwater Petrel-family dive computers.
+ *
+ * All BLE-capable Shearwater watches in the Petrel family (Peregrine,
+ * Perdix/AI/2, Petrel 2/3, Teric, Nerd 2, Tern) advertise on the same
+ * service UUID and speak the same protocol per libdivecomputer's
+ * shearwater_petrel.c. This class implements that one protocol; model
+ * disambiguation happens in the JS layer via parseShearwaterModel
+ * against the BLE-advertised GAP name.
+ */
 @SuppressLint("MissingPermission")
-class PeregrineBleManager(private val context: Context) {
+class ShearwaterPetrelManager(private val context: Context) {
 
     companion object {
         private val UART_SERVICE_UUID = UUID.fromString("fe25c237-0ece-443c-b0aa-e02033e7029d")
@@ -320,6 +330,54 @@ class PeregrineBleManager(private val context: Context) {
     }
 
     // ---- High-level operations ----
+
+    /**
+     * Identifying facts about the connected device. Returned from
+     * [getDeviceInfo] after a successful connect; consumed by the
+     * add-a-device flow to register the device with the backend.
+     */
+    data class DeviceInfo(
+        val scanName: String?,
+        val serial: String,
+        val firmwareVersion: String?,
+    )
+
+    /**
+     * Returns identifying facts about the connected device. Reads serial +
+     * firmware via RDBI; the scan name comes from the connected GATT
+     * peripheral. Used by the add-a-device flow to cross-check the
+     * user-picked model and to register the device with the backend.
+     *
+     * Must be called after a successful connect() and before any other
+     * Layer-3 method (the RDBI handshake doubles as a connectivity probe).
+     */
+    suspend fun getDeviceInfo(): DeviceInfo {
+        if (!isConnected()) throw PeregrineProtocolException.NotConnected()
+
+        val scanName = bluetoothGatt?.device?.name
+
+        // Serial as hex string of the raw bytes — stable across firmware
+        // formatting differences. Backend stores the hex form. Lowercase,
+        // no separators (matches iOS).
+        val serialBytes = rdbi(Peregrine.ID_SERIAL)
+        val serial = serialBytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+
+        // Firmware as ASCII; trim trailing whitespace/nulls. Matches iOS:
+        // returns null if non-ASCII (does not throw).
+        val firmwareBytes = rdbi(Peregrine.ID_FIRMWARE)
+        val firmware = try {
+            String(firmwareBytes, Charsets.US_ASCII).trim()
+        } catch (e: Exception) {
+            null
+        }
+        this.firmwareVersion = firmware  // cache; listDives also reads but that's fine
+
+        return DeviceInfo(
+            scanName = scanName,
+            serial = serial,
+            firmwareVersion = firmware,
+        )
+    }
 
     suspend fun listDives(onProgress: ((Int) -> Unit)? = null): ListDivesResult {
         dlog("listDives: reading serial…")

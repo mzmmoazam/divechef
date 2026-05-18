@@ -1,4 +1,5 @@
 import { FIXTURE_DIVES } from './fixtures';
+import type { DeviceInfo } from './DiveComputer';
 
 export type ScanResult = { name: string; identifier: string; rssi: number };
 export type ManifestEntry = { index: number; address: number; fingerprintHex: string };
@@ -56,6 +57,15 @@ class MockDiveComputerModule implements DiveComputerModule {
 
   async isConnected(): Promise<boolean> {
     return this.connected;
+  }
+
+  async getDeviceInfo(): Promise<DeviceInfo> {
+    if (!this.connected) throw new Error('Not connected');
+    return {
+      scanName: 'Peregrine-MOCK',
+      serial: 'mock0001a1b2c3d4',
+      firmwareVersion: 'MOCK-1.0',
+    };
   }
 
   async listDives(): Promise<ManifestEntry[]> {
