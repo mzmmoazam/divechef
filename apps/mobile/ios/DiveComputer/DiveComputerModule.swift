@@ -14,8 +14,8 @@ class DiveComputerModule: RCTEventEmitter {
 
     // MARK: - BLE Manager
 
-    private lazy var manager: PeregrineBLEManager = {
-        let m = PeregrineBLEManager()
+    private lazy var manager: ShearwaterPetrelManager = {
+        let m = ShearwaterPetrelManager()
         m.onDiscovered = { [weak self] identifier, name, rssi in
             let body: [String: Any] = [
                 "identifier": identifier,

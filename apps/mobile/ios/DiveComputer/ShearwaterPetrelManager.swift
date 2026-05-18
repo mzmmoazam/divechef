@@ -1,5 +1,12 @@
-// PeregrineBLEManager.swift
-// DiveChef — Production BLE layer for Shearwater Peregrine dive computers.
+// ShearwaterPetrelManager.swift
+// DiveChef — Production BLE layer for the Shearwater Petrel-family dive computers.
+//
+// All BLE-capable Shearwater watches in the Petrel family (Peregrine,
+// Perdix/AI/2, Petrel 2/3, Teric, Nerd 2, Tern) advertise on the same
+// service UUID and speak the same protocol per libdivecomputer's
+// shearwater_petrel.c. This class implements that one protocol; model
+// disambiguation happens in the JS layer via parseShearwaterModel
+// against the BLE-advertised GAP name.
 //
 // Adapted from spike/0c-ble-protocol/swift-sources/PeregrineClient.swift.
 // Removes SwiftUI/Combine dependencies, logging, auto-connect behavior.
@@ -16,9 +23,9 @@ private func dlog(_ message: @autoclosure () -> String) {
     #endif
 }
 
-// MARK: - PeregrineBLEManager
+// MARK: - ShearwaterPetrelManager
 
-final class PeregrineBLEManager: NSObject {
+final class ShearwaterPetrelManager: NSObject {
 
     // MARK: - Constants
 
@@ -96,7 +103,7 @@ final class PeregrineBLEManager: NSObject {
 
     private static let scanTimeoutSec: TimeInterval = 15
 
-    /// Start scanning for Peregrine peripherals. Discovered peripherals are reported via onDiscovered.
+    /// Start scanning for Shearwater Petrel-family peripherals. Discovered peripherals are reported via onDiscovered.
     /// If no device is discovered within 15 seconds, emits a `diveComputerDisconnected` event
     /// with reason `no_device_found`.
     func startScan(serviceUuid: String? = nil) {
@@ -591,7 +598,7 @@ final class PeregrineBLEManager: NSObject {
 
 // MARK: - CBCentralManagerDelegate
 
-extension PeregrineBLEManager: CBCentralManagerDelegate {
+extension ShearwaterPetrelManager: CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         if central.state == .poweredOn, pendingScan {
@@ -657,7 +664,7 @@ extension PeregrineBLEManager: CBCentralManagerDelegate {
 
 // MARK: - CBPeripheralDelegate
 
-extension PeregrineBLEManager: CBPeripheralDelegate {
+extension ShearwaterPetrelManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let e = error {
