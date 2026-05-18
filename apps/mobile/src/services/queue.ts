@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { getSyncedFingerprints } from './syncedDives';
 
 const DB_NAME = 'divechef_queue.db';
 
@@ -101,12 +102,34 @@ export async function flushQueue(
     [userId]
   );
 
+  // Fetch the user's already-synced fingerprint set once. If this fails,
+  // fall back to an empty set so the flush still runs as before.
+  const known: Set<string> = await getSyncedFingerprints(userId).catch(
+    () => new Set<string>()
+  );
+
   let succeeded = 0;
   let failed = 0;
 
   for (const row of rows) {
     try {
       const payload = JSON.parse(row.payload) as unknown;
+      const fp =
+        typeof payload === 'object' &&
+        payload !== null &&
+        'fingerprintHex' in payload &&
+        typeof (payload as { fingerprintHex?: unknown }).fingerprintHex === 'string'
+          ? (payload as { fingerprintHex: string }).fingerprintHex
+          : undefined;
+
+      if (fp && known.has(fp)) {
+        // Already synced via the direct path; the queued row is stale.
+        // Delete it and count as success so the queue shrinks correctly.
+        await database.runAsync('DELETE FROM upload_queue WHERE id = ?', [row.id]);
+        succeeded++;
+        continue;
+      }
+
       const ok = await uploadFn(payload);
       if (ok) {
         await database.runAsync('DELETE FROM upload_queue WHERE id = ?', [row.id]);

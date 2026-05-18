@@ -127,6 +127,12 @@ jest.mock('expo-sqlite', () => {
   };
 });
 
+// Mock syncedDives so we can control which fingerprints flushQueue sees as already-synced.
+const mockGetSyncedFingerprints = jest.fn();
+jest.mock('../syncedDives', () => ({
+  getSyncedFingerprints: (userId: string) => mockGetSyncedFingerprints(userId),
+}));
+
 const U1 = 'user-1';
 const U2 = 'user-2';
 
@@ -134,6 +140,7 @@ describe('queue', () => {
   beforeEach(() => {
     (SQLite as unknown as { __mockReset: () => void }).__mockReset();
     __resetQueueForTests();
+    mockGetSyncedFingerprints.mockResolvedValue(new Set<string>());
   });
 
   it('starts empty for a new user', async () => {
@@ -198,5 +205,65 @@ describe('queue', () => {
     // Trigger getDb() via any call.
     expect(await getPendingCount(U1)).toBe(0);
     expect(await getPendingCount(U2)).toBe(0);
+  });
+
+  it('flushQueue skips rows whose fingerprint is already in the synced set', async () => {
+    await enqueueUpload(U1, { fingerprintHex: 'fp-A', other: 1 });
+    await enqueueUpload(U1, { fingerprintHex: 'fp-B', other: 2 });
+    mockGetSyncedFingerprints.mockResolvedValue(new Set(['fp-A']));
+
+    const seenPayloads: unknown[] = [];
+    const result = await flushQueue(U1, async (p) => {
+      seenPayloads.push(p);
+      return true;
+    });
+
+    // 'fp-B' POSTs normally; 'fp-A' is dedup-skipped (no uploadFn call).
+    expect(seenPayloads).toEqual([{ fingerprintHex: 'fp-B', other: 2 }]);
+    // Both rows leave the queue: one via POST success, one via dedup-skip.
+    expect(result.succeeded).toBe(2);
+    expect(result.failed).toBe(0);
+    expect(await getPendingCount(U1)).toBe(0);
+  });
+
+  it('flushQueue does not call uploadFn when all rows are already synced', async () => {
+    await enqueueUpload(U1, { fingerprintHex: 'a' });
+    await enqueueUpload(U1, { fingerprintHex: 'b' });
+    await enqueueUpload(U1, { fingerprintHex: 'c' });
+    mockGetSyncedFingerprints.mockResolvedValue(new Set(['a', 'b', 'c']));
+
+    const uploadFn = jest.fn().mockResolvedValue(true);
+    const result = await flushQueue(U1, uploadFn);
+
+    expect(uploadFn).not.toHaveBeenCalled();
+    expect(result.succeeded).toBe(3);
+    expect(result.failed).toBe(0);
+    expect(await getPendingCount(U1)).toBe(0);
+  });
+
+  it('flushQueue falls back to normal upload when getSyncedFingerprints throws', async () => {
+    await enqueueUpload(U1, { fingerprintHex: 'fp-X' });
+    mockGetSyncedFingerprints.mockRejectedValue(new Error('db read failed'));
+
+    const uploadFn = jest.fn().mockResolvedValue(true);
+    const result = await flushQueue(U1, uploadFn);
+
+    expect(uploadFn).toHaveBeenCalledTimes(1);
+    expect(uploadFn).toHaveBeenCalledWith({ fingerprintHex: 'fp-X' });
+    expect(result.succeeded).toBe(1);
+    expect(result.failed).toBe(0);
+  });
+
+  it('flushQueue passes through rows that have no fingerprintHex', async () => {
+    await enqueueUpload(U1, { otherField: 'no fp here' });
+    mockGetSyncedFingerprints.mockResolvedValue(new Set(['fp-A']));
+
+    const uploadFn = jest.fn().mockResolvedValue(true);
+    const result = await flushQueue(U1, uploadFn);
+
+    // Unknown payload shape: don't drop it, run normal upload.
+    expect(uploadFn).toHaveBeenCalledTimes(1);
+    expect(uploadFn).toHaveBeenCalledWith({ otherField: 'no fp here' });
+    expect(result.succeeded).toBe(1);
   });
 });
