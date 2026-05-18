@@ -16,8 +16,18 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Production BLE layer for the Shearwater Petrel-family dive computers.
+ *
+ * All BLE-capable Shearwater watches in the Petrel family (Peregrine,
+ * Perdix/AI/2, Petrel 2/3, Teric, Nerd 2, Tern) advertise on the same
+ * service UUID and speak the same protocol per libdivecomputer's
+ * shearwater_petrel.c. This class implements that one protocol; model
+ * disambiguation happens in the JS layer via parseShearwaterModel
+ * against the BLE-advertised GAP name.
+ */
 @SuppressLint("MissingPermission")
-class PeregrineBleManager(private val context: Context) {
+class ShearwaterPetrelManager(private val context: Context) {
 
     companion object {
         private val UART_SERVICE_UUID = UUID.fromString("fe25c237-0ece-443c-b0aa-e02033e7029d")

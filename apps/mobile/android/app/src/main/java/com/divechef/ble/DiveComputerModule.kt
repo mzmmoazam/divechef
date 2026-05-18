@@ -16,14 +16,14 @@ class DiveComputerModule(reactContext: ReactApplicationContext) :
     override fun getName(): String = "DiveComputer"
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var bleManager: PeregrineBleManager? = null
+    private var bleManager: ShearwaterPetrelManager? = null
     private var cachedManifest: List<ManifestRecord> = emptyList()
     private var cachedBaseAddr: Long = 0L
     private var cachedFirmwareVersion: String? = null
 
-    private fun getOrCreateManager(): PeregrineBleManager {
+    private fun getOrCreateManager(): ShearwaterPetrelManager {
         if (bleManager == null) {
-            bleManager = PeregrineBleManager(reactApplicationContext)
+            bleManager = ShearwaterPetrelManager(reactApplicationContext)
         }
         return bleManager!!
     }
