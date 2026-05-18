@@ -74,7 +74,27 @@ The current code is single-device, Peregrine-only. We refactor for **multi-devic
 
 **Explicitly out of scope** (Bluetooth Classic SPP only — different transport stack we don't support): Petrel 1, Nerd 1.
 
-**Hardware verification:** we have only Peregrine. Peregrine ships verified end-to-end. The others ship as "should work" with high confidence (identical protocol family per libdivecomputer; just no physical-device round-trip on our side). On encountering a model whose advertised name we don't recognize, we **fail loudly** — show an error to the user and capture the raw advertised name to Sentry — rather than silently registering it as `'unknown'`.
+**Out-of-scope older models — what we tell the user:**
+
+If a user with a Petrel 1 or Nerd 1 hits the model picker, we don't show those models in the list. We DO show a "Don't see your computer?" affordance that opens a sheet:
+
+> "If your dive computer doesn't appear here, it might be one of these:
+> - **Petrel 1 or Nerd 1** — these use older Bluetooth Classic, which DiveForge doesn't support today. The open-source [Subsurface](https://subsurface-divelog.org) reads them via USB if you want to log them somewhere.
+> - **Another Shearwater model we haven't catalogued** — please get in touch ([beta@yourdomain]) and we'll work through it.
+> - **A non-Shearwater computer (Garmin, Suunto, Mares, Atomic)** — different vendor, different protocol. We're focused on Shearwater for the v1 beta."
+
+This sets honest expectations without promising future support we haven't planned.
+
+**Hardware verification — be precise about what we know:**
+
+| Status | What it means | Models |
+|---|---|---|
+| **Verified** | Real-hardware round-trip: scan → connect → manifest read → block download → decompress → upload to backend → render. Tested on multiple firmware/iOS combinations. | Peregrine |
+| **Architecturally compatible, not validated** | libdivecomputer + Subsurface treat as one family on one BLE service UUID; protocol code (LRE+XOR, manifest, RDBI/WDBI, block download) is shared. We have not run a single byte of traffic against this hardware. Model-specific edge cases libdc abstracts away may exist (different register values, timing requirements, manifest layout quirks). | Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern |
+| **Out of scope** | Different transport stack (Bluetooth Classic SPP, not BLE). | Petrel 1 · Nerd 1 |
+| **Not in v1** | Different vendor / protocol family entirely. | Garmin · Suunto · Mares · Atomic · etc. |
+
+We do NOT claim "should work" for the architecturally-compatible group. We claim "matches the architecture, hasn't been touched by our hands." If a Perdix or Teric tester surfaces, we treat them as a co-development partner, not a verified user.
 
 ### What changes
 
@@ -82,9 +102,38 @@ The current code is single-device, Peregrine-only. We refactor for **multi-devic
 
 - Rename `PeregrineBLEManager` → `ShearwaterPetrelManager` (both iOS + Android).
 - Service UUID stays a single constant — `FE25C237-0ECE-443C-B0AA-E02033E7029D` covers every BLE-capable Shearwater per Subsurface's authoritative table. No list, no parameterization debt.
-- **Model dispatch by BLE-advertised GAP name during scan**, not after connect. The advertised name is in the `ScanResult` we already emit. Map name-prefix → model via a small `parseShearwaterModel(name)` function in shared TS (so iOS, Android, and JS agree). Known prefixes: `Peregrine`, `Perdix 2`, `Perdix AI`, `Perdix`, `Petrel 3`, `Petrel`, `Teric`, `Nerd 2`, `Tern`. **No `'unknown'` fallback** — a name that doesn't match any prefix surfaces as `model: null` to the JS layer, and the registration flow refuses to proceed and shows a "Unrecognized device — please report what model you have" UI.
-- `getDeviceInfo()` is still exposed but used for **confirmation, not dispatch**: returns `{ model: parsed-from-name, serial: from-RDBI-ID_SERIAL, firmwareVersion: from-RDBI-ID_FIRMWARE, friendlyName: derived }`.
-- Existing 86 protocol unit tests stay green — they exercise the protocol, not the device label. Rename is mechanical. Add unit tests for `parseShearwaterModel` covering all known prefixes plus a "garbled name → null" case.
+- `ScanResult` already exposes `name: string` from `peripheral.name` — no native-side change needed for discovery.
+- `getDeviceInfo()` returns `{ scanName: string | null, serial: from-RDBI-ID_SERIAL, firmwareVersion: from-RDBI-ID_FIRMWARE }` after connect. Note the rename: `model` is no longer derived natively — the user picks it (see "Model identity" below). The native module just surfaces facts.
+- Existing 86 protocol unit tests stay green — they exercise the protocol, not the device label. Rename is mechanical.
+
+**Model identity — user-assisted, not auto-detected:**
+
+Pure name-parsing is fragile (firmware variations, possible user-rename of the GAP name, models we haven't yet catalogued). Pure auto-detect is what every other device-pairing app avoids — Garmin Connect, Strava, Wahoo, Apple Watch, etc. all ask the user to pick the model. We do the same, but use the BLE-advertised name as a sanity check.
+
+The flow:
+
+1. **User taps "Add a dive computer"** on Sync (zero-device empty state) or Profile.
+2. **Model picker** — flat list of supported models, grouped under "Shearwater" with a small "Verified" badge on Peregrine and "Compatible, not yet validated" on the rest. Models offered (all verified by libdc/Subsurface as same protocol family on the same UUID): Peregrine · Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern. Plus an "Other Shearwater (tell us)" entry that captures user-typed name + raw scan data and refuses to register (Sentry breadcrumb so we can decide if it's worth supporting).
+3. **Scan starts** filtered to the FE25 service UUID.
+4. **Cross-check on first discovery** — `parseShearwaterModel(scanResult.name)` runs against the same prefix table the picker uses (see Shared parser below). Three cases:
+   - **`parsed === userPicked`**: high-confidence match. Proceed to connect → register with the user's model + the device's serial.
+   - **`parsed && parsed !== userPicked`**: confirmation dialog: "You picked Peregrine but this device advertises as Teric. Which is correct?" with two options. The user's choice wins. Sentry breadcrumb captures the discrepancy.
+   - **`parsed === null`**: we couldn't recognize the name. Trust the user's pick, register, and Sentry breadcrumb the raw `name` so we can update the parser later. No user-facing error — they shouldn't be punished for our incomplete table.
+5. **After connect**, `getDeviceInfo()` returns the serial; we register via `POST /api/devices` with `{ model: userPickedModel, deviceSerial, scanName, friendlyName: "<UserName>'s <Model>" }`.
+
+**Shared parser** (`packages/shared/src/shearwaterModel.ts`):
+
+```ts
+export type ShearwaterModel =
+  | 'peregrine' | 'perdix' | 'perdix-ai' | 'perdix-2'
+  | 'petrel-2' | 'petrel-3' | 'teric' | 'nerd-2' | 'tern';
+
+export function parseShearwaterModel(advertisedName: string | null): ShearwaterModel | null;
+```
+
+The parser uses prefix matching with longest-match-first ordering ("Perdix 2" matches before "Perdix"). It's the **secondary** truth — the user pick is **primary**. The parser exists for the cross-check above, never as standalone dispatch.
+
+Test coverage for the parser is exhaustive across the documented prefixes plus garbled names ("Pe regrine", "PEREGRINE-1234", "" / null) → expected `null` for all.
 
 **Backend (Plan 1 schema additions):**
 
@@ -108,9 +157,10 @@ The current code is single-device, Peregrine-only. We refactor for **multi-devic
 
 **Mobile UX:**
 
-- **First-sync registration flow:** scan discovers a device → `parseShearwaterModel(scanResult.name)` runs immediately. If it returns `null`, the discovery is rejected with a "We don't recognize this dive computer model. Currently we support Shearwater Petrel-family BLE devices (Peregrine, Perdix, Petrel 2/3, Teric, Nerd 2, Tern). Please report what model you have." error — captures the raw advertised name to Sentry. If it returns a known model, the user proceeds; after connect, `getDeviceInfo()` confirms serial + firmware, and `POST /api/devices` registers with a generated friendly name (e.g. "Mohammad's Peregrine").
-- **Sync screen:** if 0 devices registered → scan flow (existing). If 1 device → sync that one (existing). If ≥2 devices → device picker before scan ("Sync from which?").
-- **Profile screen:** new "Your dive computers" section listing each registered device with friendly name, model, serial (last 4), last sync date, rename, remove.
+- **Add-a-device flow** lives behind the "Add a dive computer" CTA on the Sync zero-device empty state and on Profile (when the user already has at least one). Steps as in "Model identity" above: pick model → scan → cross-check → confirm-or-trust → connect → register.
+- **Sync screen:** if 0 devices registered → "Add a dive computer" empty state. If 1 device → sync that one (existing). If ≥2 devices → device picker before scan ("Sync from which?").
+- **Profile screen:** new "Your dive computers" section listing each registered device with friendly name, model badge ("Verified by us" for Peregrine, "Compatible, not yet validated" for the rest), serial (last 4), last sync date, rename, "Wrong model? Change…" affordance, remove.
+- **"Don't see your computer?" affordance** on the model picker — opens a sheet with the helpful redirect (see "Out-of-scope older models" below).
 
 ### What this DOES NOT include
 
@@ -121,11 +171,15 @@ The current code is single-device, Peregrine-only. We refactor for **multi-devic
 
 ### Honest claim for the beta
 
-In the beta-tester docs and the marketing landing's feature list:
+Tester docs and marketing copy use this exact framing:
 
-> "DiveForge syncs with Shearwater Peregrine, and *should* sync with any BLE-capable Shearwater Petrel-family computer — Perdix (AI / 2), Petrel 2/3, Teric, Nerd 2, Tern. Same protocol family, same Bluetooth interface. Peregrine is verified end-to-end on real hardware; the others are unverified — please get in touch if you have one and we'll figure out anything that doesn't work. Petrel 1 and Nerd 1 use older Bluetooth Classic and aren't supported."
+> **Verified:** DiveForge has been tested end-to-end on the Shearwater Peregrine.
+>
+> **Architecturally compatible, not yet validated by us:** Perdix (AI / 2), Petrel 2/3, Teric, Nerd 2, Tern. These are part of the Shearwater Petrel family — the same Bluetooth interface and protocol — so the app's BLE and protocol code expects to handle them. We haven't run a single sync against any of these on our own hardware. If you own one and want to be a beta partner for it, please get in touch — we'll work through anything specific to your model together.
+>
+> **Not supported in v1:** Petrel 1, Nerd 1 (older Bluetooth Classic — Subsurface reads these via USB if you need a logbook). Garmin, Suunto, Mares, Atomic, and other non-Shearwater computers (different protocol families).
 
-We're confident in the family because libdivecomputer treats them as one (verified via source). We're transparent about what we've actually run. Tester expectations match reality.
+The model picker in the app surfaces the same distinction: "Verified by us" badge on Peregrine, "Compatible, not yet validated" badge on the rest. Users see the truth before they pick.
 
 ### Acceptance criteria
 
@@ -368,8 +422,8 @@ Each labeled task gets its own implementation plan after this spec is approved.
 - **EAS free tier 30 builds/month.** Active development might consume that on iOS+Android combined. Mitigation: be deliberate about builds; combine fixes before rebuilding. Upgrade to EAS Production tier ($29/mo) if hit consistently.
 - **Personal Apple cert 7-day expiry.** If the recommended TestFlight path is rejected, expect to rebuild and re-trust weekly during the beta. Honest UX cost; document in tester instructions.
 - **Brand drift between mobile and web.** Sharing tokens via `packages/shared/tokens.ts` mitigates. If the web team and mobile team drift on a single token, fix at the package and both pick up.
-- **Untested Petrel-family models (Perdix, Petrel 2/3, Teric, Nerd 2, Tern).** We ship architectural support without hardware to verify against. Mitigations: (a) per libdivecomputer + Subsurface source, the protocol code and BLE service UUID are identical for the family — the prior is "almost certainly works"; (b) we fail loudly on unrecognized model names so a regression is visible; (c) tester docs and marketing copy explicitly disclose Peregrine-only verification. Cost of being wrong: a Perdix/Teric tester reports a failure; we triage and fix specifically.
-- **Advertised-name parsing edge cases.** Shearwater hasn't published an exhaustive list of advertised GAP names and the strings could vary by firmware (e.g., "Petrel 3" vs "Petrel-3" vs "Petrel III"). Mitigations: (a) `parseShearwaterModel` uses prefix-matching against a documented list; (b) unrecognized names fail-loud and capture the raw string to Sentry so we can update the parser; (c) the parser is shared TS in `packages/shared/` so iOS, Android, and JS agree.
+- **Architecturally compatible, not yet validated** Petrel-family models (Perdix, Petrel 2/3, Teric, Nerd 2, Tern). We ship support without hardware to verify against. Mitigations: (a) the public model picker badges these as "Compatible, not yet validated" — testers see the truth; (b) the user picks the model so we don't depend on advertised-name parsing for primary identity; (c) every cross-check discrepancy and unparsed name is captured to Sentry so we learn fast. Cost of being wrong: a non-Peregrine tester reports a failure; we work through it as a co-development partner, not as a "broken" tester experience.
+- **Advertised-name parsing edge cases.** GAP name strings could vary by firmware (e.g., "Petrel 3" vs "Petrel-3" vs "Petrel III"), and BLE GAP names may even be user-renamable on some Shearwater firmwares (unverified). Mitigations: (a) the parser is the **secondary** truth — user pick is primary; (b) parser mismatches surface as "is this right?" UI, not silent failure; (c) the parser is shared TS in `packages/shared/` so iOS, Android, and JS agree on the prefix table.
 
 ---
 
@@ -381,5 +435,5 @@ Each labeled task gets its own implementation plan after this spec is approved.
 4. Backend + DB deployed; mobile app works end-to-end against the deployed backend.
 5. Beta build distributable to 2–3 testers on iOS + Android; one full sync round-trip per tester succeeds.
 6. Crashes surface in Sentry within minutes.
-7. Multi-device architecture in place: native module renamed to `ShearwaterPetrelManager`, `parseShearwaterModel` lives in `packages/shared/` and covers the documented prefixes, `getDeviceInfo()` returns model + serial, `user_devices` table + CRUD endpoints exist, local DB tables device-scoped, Profile shows the registered device, Sync screen handles the 0/1/≥2 device cases. Unrecognized models fail loudly with telemetry. Peregrine verified end-to-end; Perdix/Teric/Petrel-2/Petrel-3/Nerd-2/Tern marked unverified in tester-facing copy. Petrel 1 and Nerd 1 explicitly flagged as out-of-scope (BT Classic only).
+7. Multi-device architecture in place: native module renamed to `ShearwaterPetrelManager`, `parseShearwaterModel` lives in `packages/shared/` and covers the documented prefixes, `getDeviceInfo()` returns scan name + serial + firmware, `user_devices` table + CRUD endpoints exist, local DB tables device-scoped, Profile shows registered devices with verification-status badges, Sync screen handles the 0/1/≥2 device cases, and the **add-a-device flow is user-driven (model picker first, scan cross-checks)** — no silent dispatch. Peregrine ships with a "Verified by us" badge; Perdix/Teric/Petrel-2/Petrel-3/Nerd-2/Tern ship with a "Compatible, not yet validated" badge. Petrel 1 / Nerd 1 are surfaced through the "Don't see your computer?" sheet with a Subsurface redirect. The honest-claim copy lives in tester docs and the marketing landing.
 8. Total recurring cost: $0 (with the option to spend $99 + $25 one-time if friction warrants).
