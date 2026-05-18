@@ -90,11 +90,12 @@ This sets honest expectations without promising future support we haven't planne
 | Status | What it means | Models |
 |---|---|---|
 | **Verified** | Real-hardware round-trip: scan → connect → manifest read → block download → decompress → upload to backend → render. Tested on multiple firmware/iOS combinations. | Peregrine |
-| **Architecturally compatible, not validated** | libdivecomputer + Subsurface treat as one family on one BLE service UUID; protocol code (LRE+XOR, manifest, RDBI/WDBI, block download) is shared. We have not run a single byte of traffic against this hardware. Model-specific edge cases libdc abstracts away may exist (different register values, timing requirements, manifest layout quirks). | Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern |
-| **Out of scope** | Different transport stack (Bluetooth Classic SPP, not BLE). | Petrel 1 · Nerd 1 |
+| **Compatible, not yet validated** | libdivecomputer + Subsurface treat as one family on one BLE service UUID; protocol code (LRE+XOR, manifest, RDBI/WDBI, block download) is shared. We have not run a single byte of traffic against this hardware. Model-specific edge cases libdc abstracts away may exist (different register values, timing requirements, manifest layout quirks). | Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern |
+| **Experimental** | User self-identified as "Other Shearwater" through the picker. The watch advertises on the FE25 service UUID (so it IS a Shearwater BLE device), but it's a model we haven't catalogued. We trust the user, register as `unknown-shearwater`, and instrument heavily — first-sync success/failure surfaces a telemetry-rich toast asking them to tell us the model. If the BLE-advertised name happens to match a known prefix (e.g. they picked "Other" but it's actually a Teric), the cross-check dialog offers to upgrade the registration. | `unknown-shearwater` |
+| **Out of scope** | Different transport stack (Bluetooth Classic SPP, not BLE). Surfaced via the "Don't see your computer?" sheet with a Subsurface redirect. | Petrel 1 · Nerd 1 |
 | **Not in v1** | Different vendor / protocol family entirely. | Garmin · Suunto · Mares · Atomic · etc. |
 
-We do NOT claim "should work" for the architecturally-compatible group. We claim "matches the architecture, hasn't been touched by our hands." If a Perdix or Teric tester surfaces, we treat them as a co-development partner, not a verified user.
+We do NOT claim "should work" for the compatible-not-validated or experimental groups. We claim "matches the architecture; hasn't been touched by our hands." If a Perdix, Teric, or Other-Shearwater tester surfaces, we treat them as a co-development partner — telemetry guides the conversation, not optimism.
 
 ### What changes
 
@@ -113,12 +114,13 @@ Pure name-parsing is fragile (firmware variations, possible user-rename of the G
 The flow:
 
 1. **User taps "Add a dive computer"** on Sync (zero-device empty state) or Profile.
-2. **Model picker** — flat list of supported models, grouped under "Shearwater" with a small "Verified" badge on Peregrine and "Compatible, not yet validated" on the rest. Models offered (all verified by libdc/Subsurface as same protocol family on the same UUID): Peregrine · Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern. Plus an "Other Shearwater (tell us)" entry that captures user-typed name + raw scan data and refuses to register (Sentry breadcrumb so we can decide if it's worth supporting).
+2. **Model picker** — flat list of supported models, grouped under "Shearwater" with badges per the four-tier table: "Verified" on Peregrine, "Compatible, not yet validated" on the rest of the documented family. Models offered (all confirmed by libdc/Subsurface as same protocol family on the same UUID): Peregrine · Perdix · Perdix AI · Perdix 2 · Petrel 2 · Petrel 3 · Teric · Nerd 2 · Tern. Plus an **"Other Shearwater (let us know)"** entry that registers the device as `unknown-shearwater` (Experimental tier) and captures the raw advertised name + scan data to Sentry. The user has explicitly opted into experimental territory by choosing this entry — we trust them and let them try.
 3. **Scan starts** filtered to the FE25 service UUID.
-4. **Cross-check on first discovery** — `parseShearwaterModel(scanResult.name)` runs against the same prefix table the picker uses (see Shared parser below). Three cases:
-   - **`parsed === userPicked`**: high-confidence match. Proceed to connect → register with the user's model + the device's serial.
-   - **`parsed && parsed !== userPicked`**: confirmation dialog: "You picked Peregrine but this device advertises as Teric. Which is correct?" with two options. The user's choice wins. Sentry breadcrumb captures the discrepancy.
-   - **`parsed === null`**: we couldn't recognize the name. Trust the user's pick, register, and Sentry breadcrumb the raw `name` so we can update the parser later. No user-facing error — they shouldn't be punished for our incomplete table.
+4. **Cross-check on first discovery** — `parseShearwaterModel(scanResult.name)` runs against the same prefix table the picker uses (see Shared parser below). Cases:
+   - **`parsed === userPicked`** (e.g. user picked Peregrine, BLE name parses to Peregrine): high-confidence match. Proceed to connect → register with the user's model + the device's serial.
+   - **`parsed && parsed !== userPicked`** (e.g. user picked Peregrine, BLE name parses to Teric): confirmation dialog: "You picked Peregrine but this device advertises as Teric. Which is correct?" with two options. The user's choice wins. Sentry breadcrumb captures the discrepancy.
+   - **`userPicked === 'unknown-shearwater'` AND `parsed` is a known model** (user picked Other but the BLE name says Teric): "auto-upgrade" dialog: "Looks like this is a Teric — register as Teric, or keep as 'Other'?" Default suggestion: upgrade to the parsed model.
+   - **`parsed === null` (unparseable)**: no parser opinion. Trust the user's pick — whether they chose a documented model or `unknown-shearwater`. Sentry breadcrumb the raw `name` so we can update the parser later. No user-facing error — they shouldn't be punished for our incomplete table.
 5. **After connect**, `getDeviceInfo()` returns the serial; we register via `POST /api/devices` with `{ model: userPickedModel, deviceSerial, scanName, friendlyName: "<UserName>'s <Model>" }`.
 
 **Shared parser** (`packages/shared/src/shearwaterModel.ts`):
@@ -126,14 +128,20 @@ The flow:
 ```ts
 export type ShearwaterModel =
   | 'peregrine' | 'perdix' | 'perdix-ai' | 'perdix-2'
-  | 'petrel-2' | 'petrel-3' | 'teric' | 'nerd-2' | 'tern';
+  | 'petrel-2' | 'petrel-3' | 'teric' | 'nerd-2' | 'tern'
+  | 'unknown-shearwater';
 
-export function parseShearwaterModel(advertisedName: string | null): ShearwaterModel | null;
+export type ShearwaterVerificationTier = 'verified' | 'compatible' | 'experimental';
+
+export function parseShearwaterModel(advertisedName: string | null): Exclude<ShearwaterModel, 'unknown-shearwater'> | null;
+export function verificationTier(model: ShearwaterModel): ShearwaterVerificationTier;
 ```
 
-The parser uses prefix matching with longest-match-first ordering ("Perdix 2" matches before "Perdix"). It's the **secondary** truth — the user pick is **primary**. The parser exists for the cross-check above, never as standalone dispatch.
+The parser uses prefix matching with longest-match-first ordering ("Perdix 2" matches before "Perdix"). It returns only documented-table models or `null` — never `'unknown-shearwater'`, because that's a user-driven label, not a parser output. It's the **secondary** truth — the user pick is **primary**.
 
-Test coverage for the parser is exhaustive across the documented prefixes plus garbled names ("Pe regrine", "PEREGRINE-1234", "" / null) → expected `null` for all.
+`verificationTier` returns `'verified'` for `'peregrine'`, `'experimental'` for `'unknown-shearwater'`, and `'compatible'` for everything else. UI uses this to render badges consistently across the picker, Profile, and any sync-success/failure toasts.
+
+Test coverage: parser is exhaustive across the documented prefixes plus garbled names ("Pe regrine", "PEREGRINE-1234", "" / null) → expected `null` for all. `verificationTier` is total — every model maps to exactly one tier.
 
 **Backend (Plan 1 schema additions):**
 
@@ -157,7 +165,8 @@ Test coverage for the parser is exhaustive across the documented prefixes plus g
 
 **Mobile UX:**
 
-- **Add-a-device flow** lives behind the "Add a dive computer" CTA on the Sync zero-device empty state and on Profile (when the user already has at least one). Steps as in "Model identity" above: pick model → scan → cross-check → confirm-or-trust → connect → register.
+- **Add-a-device flow** lives behind the "Add a dive computer" CTA on the Sync zero-device empty state and on Profile (when the user already has at least one). Steps as in "Model identity" above: pick model → scan → cross-check → confirm/auto-upgrade/trust → connect → register.
+- **First-sync result toast** for non-Verified devices: on success, "Sync worked! If you're using Other Shearwater, please reply with your watch model so we can promote it to a Verified badge." On failure, `Sync failed at {stage}. We've captured the diagnostic data — we'll be in touch.` Telemetry-rich path so we learn from every Compatible/Experimental sync.
 - **Sync screen:** if 0 devices registered → "Add a dive computer" empty state. If 1 device → sync that one (existing). If ≥2 devices → device picker before scan ("Sync from which?").
 - **Profile screen:** new "Your dive computers" section listing each registered device with friendly name, model badge ("Verified by us" for Peregrine, "Compatible, not yet validated" for the rest), serial (last 4), last sync date, rename, "Wrong model? Change…" affordance, remove.
 - **"Don't see your computer?" affordance** on the model picker — opens a sheet with the helpful redirect (see "Out-of-scope older models" below).
