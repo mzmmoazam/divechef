@@ -193,6 +193,34 @@ final class ShearwaterPetrelManager: NSObject {
 
     // MARK: - Public actions (Layer 3)
 
+    /// Returns identifying facts about the connected device. Reads serial +
+    /// firmware via RDBI; the scan name is the BLE GAP name observed during
+    /// scan. Used by the add-a-device flow to cross-check the user-picked
+    /// model and to register the device with the backend.
+    ///
+    /// Must be called after a successful `connect()` and before any other
+    /// Layer-3 method (the RDBI handshake doubles as a connectivity probe).
+    func getDeviceInfo() async throws -> (scanName: String?, serial: String, firmwareVersion: String?) {
+        guard isReady else { throw PeregrineProtocolError.notConnected }
+
+        // Scan name comes from the connected peripheral; nil if iOS doesn't
+        // expose it (e.g. some restored connection paths).
+        let scanName = peripheral?.name
+
+        // Serial as hex string of the raw bytes — stable across firmware
+        // formatting differences. Backend stores the hex form.
+        let serialBytes = try await rdbi(id: Peregrine.ID_SERIAL)
+        let serial = serialBytes.map { String(format: "%02x", $0) }.joined()
+
+        // Firmware as ASCII; trim trailing whitespace/nulls if any.
+        let firmwareBytes = try await rdbi(id: Peregrine.ID_FIRMWARE)
+        let firmwareVersion = String(data: firmwareBytes, encoding: .ascii)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        self.firmwareVersion = firmwareVersion  // cache; listDives also reads but that's fine
+
+        return (scanName: scanName, serial: serial, firmwareVersion: firmwareVersion)
+    }
+
     /// Discover dives on the device. Reads serial/firmware/hardware/logupload, then the
     /// manifest. Returns array of (index, address, fingerprintHex) tuples.
     func listDives() async throws -> [(index: Int, address: UInt32, fingerprintHex: String)] {

@@ -20,6 +20,9 @@ RCT_EXTERN_METHOD(disconnect:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(isConnected:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(getDeviceInfo:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(listDives:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
