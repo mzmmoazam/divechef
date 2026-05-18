@@ -31,17 +31,19 @@ model User {
 }
 
 model Device {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
-  bleAddress   String
-  model        String
-  serialNumber String?
-  nickname     String?
-  lastSyncAt   DateTime?
-  createdAt    DateTime  @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model           String
+  serialNumber    String
+  friendlyName    String?
+  scanName        String?
+  firmwareVersion String?
+  registeredAt    DateTime  @default(now())
+  lastSyncAt      DateTime?
 
-  @@unique([userId, bleAddress])
+  @@unique([userId, serialNumber])
+  @@index([userId])
 }
 
 model Dive {
@@ -49,6 +51,11 @@ model Dive {
   userId           String
   user             User         @relation(fields: [userId], references: [id])
   deviceId         String?
+  // Foreign-keyless association to Device.serialNumber. Kept on the Dive
+  // row directly so deleting a Device (no cascade) leaves the historical
+  // reference intact. Indexed by (userId, deviceSerial) for "show me my
+  // dives from this computer" queries.
+  deviceSerial     String?
   externalId       String
   startedAt        DateTime
   durationSec      Int
@@ -67,6 +74,7 @@ model Dive {
 
   @@unique([userId, externalId])
   @@index([userId, startedAt])
+  @@index([userId, deviceSerial])
 }
 
 model DiveSample {
