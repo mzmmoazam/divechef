@@ -3,9 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueueFlush } from '../hooks/useQueueFlush';
 
-export function QueueBanner() {
+export function QueueBanner({ deviceSerial }: { deviceSerial: string | null }) {
   const { t } = useTranslation();
-  const { pendingCount } = useQueueFlush();
+  const { pendingCount } = useQueueFlush(deviceSerial);
 
   if (pendingCount === 0) {
     return null;

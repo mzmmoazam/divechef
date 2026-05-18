@@ -13,7 +13,7 @@ async function uploadDive(payload: unknown): Promise<boolean> {
   }
 }
 
-export function useQueueFlush() {
+export function useQueueFlush(deviceSerial: string | null) {
   const [pendingCount, setPendingCount] = useState(0);
   const appStateRef = useRef(AppState.currentState);
   const isFlushing = useRef(false);
@@ -21,25 +21,28 @@ export function useQueueFlush() {
   const userId = user?.id;
 
   const refreshCount = useCallback(async () => {
-    if (!userId) {
+    // No device selected (P1 not wired yet, or user logged out): show zero
+    // pending and skip the DB read. Same defensive pattern as the userId
+    // guard — both must be present before queue ops are valid.
+    if (!userId || !deviceSerial) {
       setPendingCount(0);
       return;
     }
-    const count = await getPendingCount(userId);
+    const count = await getPendingCount(userId, deviceSerial);
     setPendingCount(count);
-  }, [userId]);
+  }, [userId, deviceSerial]);
 
   const flush = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !deviceSerial) return;
     if (isFlushing.current) return;
     isFlushing.current = true;
     try {
-      await flushQueue(userId, uploadDive);
+      await flushQueue(userId, deviceSerial, uploadDive);
       await refreshCount();
     } finally {
       isFlushing.current = false;
     }
-  }, [refreshCount, userId]);
+  }, [refreshCount, userId, deviceSerial]);
 
   useEffect(() => {
     refreshCount();
