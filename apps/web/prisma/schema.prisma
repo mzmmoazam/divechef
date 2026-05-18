@@ -51,6 +51,11 @@ model Dive {
   userId           String
   user             User         @relation(fields: [userId], references: [id])
   deviceId         String?
+  // Foreign-keyless association to Device.serialNumber. Kept on the Dive
+  // row directly so deleting a Device (no cascade) leaves the historical
+  // reference intact. Indexed by (userId, deviceSerial) for "show me my
+  // dives from this computer" queries.
+  deviceSerial     String?
   externalId       String
   startedAt        DateTime
   durationSec      Int
@@ -69,6 +74,7 @@ model Dive {
 
   @@unique([userId, externalId])
   @@index([userId, startedAt])
+  @@index([userId, deviceSerial])
 }
 
 model DiveSample {
