@@ -8,7 +8,7 @@ import type { DiveSampleInput } from "@divechef/shared";
 
 interface DiveMeta {
   deviceModel: string;
-  deviceSerial?: string;
+  deviceSerial: string;
   externalId: string;
   startedAt: string;
 }
@@ -167,6 +167,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate deviceSerial against the user's registered devices.
+    // M3 contract: every uploaded dive must come from a known computer.
+    if (typeof meta.deviceSerial !== "string" || meta.deviceSerial.length === 0) {
+      return NextResponse.json(
+        { error: "invalid_meta", detail: "meta.deviceSerial is required" },
+        { status: 400 }
+      );
+    }
+
+    const device = await prisma.device.findUnique({
+      where: {
+        userId_serialNumber: { userId: user.id, serialNumber: meta.deviceSerial },
+      },
+    });
+    if (!device) {
+      return NextResponse.json(
+        {
+          error: "unregistered_device",
+          detail: "Register the device via POST /api/devices first.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Idempotency check: (userId, externalId)
     const existing = await prisma.dive.findUnique({
       where: { userId_externalId: { userId: user.id, externalId: meta.externalId } },
@@ -202,6 +226,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: user.id,
         externalId: meta.externalId,
+        deviceSerial: meta.deviceSerial,
         startedAt: new Date(meta.startedAt),
         durationSec: diveData.durationSec,
         maxDepthM: diveData.maxDepthM,
@@ -237,6 +262,15 @@ export async function POST(req: NextRequest) {
       },
       include: { insights: true },
     });
+
+    // Side-effect: bump Device.lastSyncAt so the device list UI can show
+    // "last synced X minutes ago". Best-effort; don't fail the upload if
+    // this update can't write.
+    await prisma.device
+      .update({ where: { id: device.id }, data: { lastSyncAt: new Date() } })
+      .catch((err) => {
+        console.error("lastSyncAt update failed:", err);
+      });
 
     return NextResponse.json(
       {

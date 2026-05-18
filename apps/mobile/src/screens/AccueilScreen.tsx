@@ -58,7 +58,9 @@ export default function AccueilScreen() {
   const ListHeader = useMemo(() => {
     return (
       <>
-        <QueueBanner />
+        {/* deviceSerial=null until P1 wires the registered-device state.
+            useQueueFlush gracefully shows 0 pending while null. */}
+        <QueueBanner deviceSerial={null} />
         {lastDive && (
           <LastDiveCard
             dive={lastDive}

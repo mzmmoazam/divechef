@@ -7,6 +7,12 @@
 **Spec:** `docs/superpowers/specs/2026-05-18-phase-a-beta-ship-design.md` (Multi-device architecture > Local DB schema migration).
 **Depends on:** M1 (`@divechef/shared` → `DeviceInfo` type, `getDeviceInfo()` native + mock surface).
 
+> **Worktree note:** If executing this plan in a fresh worktree, run
+> `bash scripts/bootstrap-worktree.sh` from the worktree root before any
+> `xcodebuild` or `gradlew` command. The script copies gitignored
+> Expo-regenerated iOS/Android build inputs from main and runs
+> `pod install`.
+
 **Goal:** Add `device_serial` scoping to both local SQLite tables (`synced_fingerprints` and `upload_queue`) so multi-device users get correct dedup and queue isolation. Update every API site to take `deviceSerial` alongside the existing `userId`. DRY up the mock's local-type drift in the same pass.
 
 **Architecture:** Same destructive-migration pattern we used twice for user-scoping (`2026-05-16-user-scoped-local-caches.md`). For `synced_fingerprints` the PK becomes the composite `(user_id, device_serial, fingerprint)` (DROP + CREATE rebuild). For `upload_queue`, add the `device_serial TEXT NOT NULL` column with the ALTER + DELETE-legacy-rows pattern. `useSync` and `useQueueFlush` thread `deviceSerial` from a new state field that's set after the upcoming P1 add-a-device flow registers a device — for M2, we add the parameter and update tests, P1 wires the actual values.
