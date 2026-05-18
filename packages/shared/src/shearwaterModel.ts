@@ -80,7 +80,25 @@ export function parseShearwaterModel(advertisedName: string | null | undefined):
  * maps to exactly one tier.
  */
 export function verificationTier(model: ShearwaterModel): ShearwaterVerificationTier {
-  if (model === 'peregrine') return 'verified';
-  if (model === 'unknown-shearwater') return 'experimental';
-  return 'compatible';
+  switch (model) {
+    case 'peregrine':
+      return 'verified';
+    case 'unknown-shearwater':
+      return 'experimental';
+    case 'perdix':
+    case 'perdix-ai':
+    case 'perdix-2':
+    case 'petrel-2':
+    case 'petrel-3':
+    case 'teric':
+    case 'nerd-2':
+    case 'tern':
+      return 'compatible';
+    default: {
+      // If a new ShearwaterModel variant is added without a case here,
+      // TypeScript fails compilation: "Type 'newModel' is not assignable to type 'never'".
+      const _exhaustive: never = model;
+      throw new Error(`unreachable: unhandled ShearwaterModel ${_exhaustive as string}`);
+    }
+  }
 }
