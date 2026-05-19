@@ -1,16 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { Insight, Severity } from '@divechef/shared/types';
+import { tokens } from '../theme';
+import { Card } from './ui/Card';
 
 interface InsightCardProps {
   insight: Insight;
 }
 
 const SEVERITY_COLORS: Record<Severity, string> = {
-  info: '#4caf50',
-  warn: '#ff9800',
-  alert: '#f44336',
+  info: tokens.color.accent,
+  warn: tokens.color.warning,
+  alert: tokens.color.danger,
 };
 
 export function InsightCard({ insight }: InsightCardProps) {
@@ -18,30 +20,22 @@ export function InsightCard({ insight }: InsightCardProps) {
   const borderColor = SEVERITY_COLORS[insight.severity];
 
   return (
-    <View style={[styles.card, { borderLeftColor: borderColor }]}>
-      <Text style={styles.title}>
+    <Card style={{ borderLeftWidth: 4, borderLeftColor: borderColor, marginVertical: 6 }}>
+      <Text style={{
+        fontSize: tokens.type.bodyStrong.size,
+        fontWeight: tokens.type.bodyStrong.weight,
+        color: tokens.color.text,
+        marginBottom: tokens.space[1],
+      }}>
         {t(`insights.${insight.ruleId}.title`)}
       </Text>
-      <Text style={styles.body}>
+      <Text style={{
+        fontSize: tokens.type.small.size,
+        color: tokens.color.text2,
+        lineHeight: 18,
+      }}>
         {t(`insights.${insight.ruleId}.body`, insight.evidence as Record<string, string>)}
       </Text>
-    </View>
+    </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#fff',
-    borderLeftWidth: 4,
-    borderRadius: 8,
-    padding: 12,
-    marginVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  title: { fontSize: 15, fontWeight: '600', color: '#111', marginBottom: 4 },
-  body: { fontSize: 13, color: '#444', lineHeight: 18 },
-});
