@@ -20,6 +20,7 @@ export type RootStackParamList = {
   DiveDetail: { diveId: string };
   Sync: undefined;
   AddDevice: undefined;
+  DontSeeYourComputer: undefined;
 };
 
 export type AuthScreenProps<T extends keyof AuthStackParamList> = NativeStackScreenProps<AuthStackParamList, T>;

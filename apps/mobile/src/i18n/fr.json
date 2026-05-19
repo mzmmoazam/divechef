@@ -144,6 +144,17 @@
       "body": "Profondeur maximale atteinte : {{maxDepthM}} m. Information uniquement."
     }
   },
+  "addDevice": {
+    "dontSeeYours": {
+      "title": "Vous ne voyez pas votre ordinateur ?",
+      "petrel1Title": "Petrel 1 ou Nerd 1",
+      "petrel1Body": "Ces modèles utilisent l'ancien Bluetooth Classic, que DiveForge ne prend pas encore en charge. L'application open-source Subsurface peut les lire en USB si vous souhaitez les enregistrer ailleurs.",
+      "otherShearwaterTitle": "Un autre modèle Shearwater non répertorié",
+      "otherShearwaterBody": "Contactez-nous — on regardera ensemble.",
+      "otherVendorTitle": "Un ordinateur non-Shearwater (Garmin, Suunto, Mares, Atomic)",
+      "otherVendorBody": "Vendeur différent, protocole différent. La bêta v1 est centrée sur Shearwater."
+    }
+  },
   "summaryTips": {
     "improving_ascent_control": "Vos vitesses de remontee s'ameliorent. Continuez a surveiller votre ordinateur en fin de plongee.",
     "consistent_safety_stops": "Vos paliers de securite sont reguliers. Excellent reflexe de securite.",

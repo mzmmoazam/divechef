@@ -144,6 +144,17 @@
       "body": "Maximum depth reached: {{maxDepthM}} m. Informational only."
     }
   },
+  "addDevice": {
+    "dontSeeYours": {
+      "title": "Don't see your computer?",
+      "petrel1Title": "Petrel 1 or Nerd 1",
+      "petrel1Body": "These use older Bluetooth Classic, which DiveForge doesn't support today. The open-source Subsurface app reads them via USB if you want to log them somewhere.",
+      "otherShearwaterTitle": "Another Shearwater model we haven't catalogued",
+      "otherShearwaterBody": "Please get in touch — we'll work through it.",
+      "otherVendorTitle": "A non-Shearwater computer (Garmin, Suunto, Mares, Atomic)",
+      "otherVendorBody": "Different vendor, different protocol. We're focused on Shearwater for the v1 beta."
+    }
+  },
   "summaryTips": {
     "improving_ascent_control": "Your ascent rates are improving. Keep monitoring your computer at end of dive.",
     "consistent_safety_stops": "Your safety stops are consistent. Excellent safety habit.",

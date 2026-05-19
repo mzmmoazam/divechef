@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, Pressable, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
+import type { RootStackParamList } from '../navigation/types';
 import { DiveComputerNative } from '../native';
 import { addDiveComputerListener } from '../native/events';
 import { parseShearwaterModel, verificationTier, type ShearwaterModel } from '@divechef/shared';
@@ -38,7 +41,8 @@ const MODEL_LABEL: Record<ShearwaterModel, string> = {
 };
 
 export default function AddDeviceScreen() {
-  const nav = useNavigation();
+  const nav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { addDevice } = useActiveDevice();
   const [step, setStep] = useState<Step>('pick');
@@ -129,6 +133,13 @@ export default function AddDeviceScreen() {
             </Card>
           </Pressable>
         ))}
+        <Pressable
+          onPress={() => nav.navigate('DontSeeYourComputer')}
+          style={styles.dontSeeLink}
+          testID="dont-see-link"
+        >
+          <Text style={styles.dontSeeLinkText}>{t('addDevice.dontSeeYours.title')}</Text>
+        </Pressable>
       </ScrollView>
     );
   }
@@ -213,4 +224,10 @@ const styles = StyleSheet.create({
   hint: { color: tokens.color.text3, fontSize: 13, textAlign: 'center', marginTop: tokens.space[2] },
   confirmCard: { padding: tokens.space[4] },
   doneText: { color: tokens.color.success, fontSize: 18, fontWeight: '700' },
+  dontSeeLink: { marginTop: tokens.space[4], alignItems: 'center' },
+  dontSeeLinkText: {
+    color: tokens.color.accent,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
 });
