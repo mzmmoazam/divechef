@@ -51,6 +51,9 @@ export function WaitlistForm() {
   }
 
   return (
+    /* noValidate: JS handler + server-side validation own correctness;
+       suppressing the browser's native popovers gives consistent UX
+       and lets tests drive malformed input through onSubmit. */
     <form onSubmit={onSubmit} noValidate className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1 text-text">

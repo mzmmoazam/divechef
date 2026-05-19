@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { act } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { WaitlistForm } from '../WaitlistForm';
 
@@ -84,6 +85,12 @@ describe('WaitlistForm', () => {
 
     expect(button).toBeDisabled();
 
-    resolve({ ok: true, json: async () => ({ ok: true, email: 'a@b.com' }) });
+    await act(async () => {
+      resolve({ ok: true, json: async () => ({ ok: true, email: 'a@b.com' }) });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/thanks/i)).toBeInTheDocument();
+    });
   });
 });
