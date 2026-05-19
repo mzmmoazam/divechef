@@ -7,6 +7,7 @@ import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import DiveDetailScreen from '../screens/DiveDetailScreen';
 import SyncScreen from '../screens/SyncScreen';
+import AddDeviceScreen from '../screens/AddDeviceScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -29,6 +30,7 @@ export default function RootNavigator() {
           <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="DiveDetail" component={DiveDetailScreen} options={{ title: '' }} />
           <Stack.Screen name="Sync" component={SyncScreen} options={{ title: '' }} />
+          <Stack.Screen name="AddDevice" component={AddDeviceScreen} options={{ title: 'Add device' }} />
         </Stack.Navigator>
       ) : (
         <AuthStack />
