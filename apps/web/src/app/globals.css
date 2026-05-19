@@ -20,6 +20,7 @@
 
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  --font-serif: var(--font-instrument-serif), 'Times New Roman', 'Iowan Old Style', Georgia, serif;
 }
 
 :root {
@@ -51,4 +52,52 @@ a:hover {
 ::selection {
   background: rgba(34, 211, 238, 0.25);
   color: var(--color-text);
+}
+
+/* === Zing keyframes === */
+
+@keyframes caustics-drift {
+  0%   { transform: translate(0, 0)    scale(1);    opacity: 0.55; }
+  50%  { transform: translate(-8px, 6px) scale(1.05); opacity: 0.7; }
+  100% { transform: translate(0, 0)    scale(1);    opacity: 0.55; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 36px #22d3ee66, 0 0 80px #22d3ee22; }
+  50%      { box-shadow: 0 0 52px #22d3ee99, 0 0 120px #22d3ee33; }
+}
+
+@keyframes blink-cursor {
+  0%, 60%   { opacity: 1; }
+  61%, 100% { opacity: 0; }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.6; }
+}
+
+/* === Italic-serif gradient accent — used for ONE word in the headline === */
+
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  background: linear-gradient(90deg, #22d3ee 0%, #a5f3fc 60%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* === Reduced motion: collapse all zing animations to static === */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
