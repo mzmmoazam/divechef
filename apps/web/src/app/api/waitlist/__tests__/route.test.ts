@@ -9,6 +9,8 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
+
 import { prisma } from '@/lib/db';
 import { POST } from '../route';
 

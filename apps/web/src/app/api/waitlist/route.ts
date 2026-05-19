@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
       update: {},
     });
     return NextResponse.json({ ok: true, email: row.email }, { status: 200 });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
   }
 }
