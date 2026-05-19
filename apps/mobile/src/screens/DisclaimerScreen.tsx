@@ -1,48 +1,50 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { AuthScreenProps } from '../navigation/types';
+import { tokens } from '../theme';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
 
 export default function DisclaimerScreen({ navigation }: AuthScreenProps<'Disclaimer'>) {
   const { t } = useTranslation();
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{t('onboarding.welcome')}</Text>
-        <Text style={styles.subtitle}>{t('onboarding.subtitle')}</Text>
-        <View style={styles.disclaimerBox}>
-          <Text style={styles.disclaimerText}>{t('onboarding.disclaimer')}</Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: tokens.color.bgBase, padding: tokens.space[6] }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+        <Text style={{
+          fontSize: tokens.type.title.size,
+          fontWeight: tokens.type.title.weight,
+          color: tokens.color.text,
+          textAlign: 'center',
+          marginBottom: tokens.space[2],
+        }}>
+          {t('onboarding.welcome')}
+        </Text>
+        <Text style={{
+          fontSize: tokens.type.body.size,
+          color: tokens.color.text2,
+          textAlign: 'center',
+          marginBottom: tokens.space[8],
+        }}>
+          {t('onboarding.subtitle')}
+        </Text>
+        <Card>
+          <Text style={{
+            fontSize: tokens.type.body.size,
+            lineHeight: 22,
+            color: tokens.color.text,
+          }}>
+            {t('onboarding.disclaimer')}
+          </Text>
+        </Card>
       </ScrollView>
-      <TouchableOpacity
-        style={styles.button}
+      <Button
+        label={t('onboarding.acceptDisclaimer')}
         onPress={() => navigation.navigate('BlePermission')}
-      >
-        <Text style={styles.buttonText}>{t('onboarding.acceptDisclaimer')}</Text>
-      </TouchableOpacity>
+        variant="filled"
+        style={{ marginTop: tokens.space[4] }}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 24 },
-  content: { flexGrow: 1, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, textAlign: 'center', color: '#666', marginBottom: 32 },
-  disclaimerBox: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  disclaimerText: { fontSize: 14, lineHeight: 22, color: '#333' },
-  button: {
-    backgroundColor: '#0066cc',
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  buttonText: { color: '#fff', textAlign: 'center', fontWeight: '600', fontSize: 16 },
-});

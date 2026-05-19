@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
 import { useAuth } from '../hooks/useAuth';
 import type { AuthScreenProps } from '../navigation/types';
 import type { Niveau, Locale } from '@divechef/shared/types';
+import { tokens } from '../theme';
+import { ListItem } from '../components/ui/ListItem';
 
 const NIVEAUX: Niveau[] = ['N1', 'N2', 'N3', 'N4', 'INITIATEUR', 'MF1', 'MF2'];
 
@@ -40,46 +42,37 @@ export default function NiveauPickerScreen({ navigation, route }: AuthScreenProp
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{t('onboarding.pickNiveau')}</Text>
-      {NIVEAUX.map((niveau) => (
-        <TouchableOpacity
-          key={niveau}
-          style={[
-            styles.option,
-            selected === niveau && styles.optionSelected,
-          ]}
-          onPress={() => handleSelect(niveau)}
-          disabled={loading}
-        >
-          <Text
-            style={[
-              styles.optionText,
-              selected === niveau && styles.optionTextSelected,
-            ]}
-          >
-            {t(`niveau.${niveau}`)}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={{ flex: 1, justifyContent: 'center', padding: tokens.space[6], backgroundColor: tokens.color.bgBase }}>
+      <Text style={{
+        fontSize: tokens.type.title.size,
+        fontWeight: tokens.type.title.weight,
+        color: tokens.color.text,
+        marginBottom: tokens.space[6],
+        textAlign: 'center',
+      }}>
+        {t('onboarding.pickNiveau')}
+      </Text>
+      <View style={{
+        borderWidth: 1,
+        borderColor: tokens.color.borderSubtle,
+        borderRadius: tokens.radius.card,
+        overflow: 'hidden',
+        backgroundColor: tokens.color.bgElev,
+      }}>
+        {NIVEAUX.map((niveau, index) => (
+          <View key={niveau} style={index < NIVEAUX.length - 1 ? {
+            borderBottomWidth: 1,
+            borderBottomColor: tokens.color.borderSubtle,
+          } : undefined}>
+            <ListItem
+              title={t(`niveau.${niveau}`)}
+              rightValue={selected === niveau ? '✓' : undefined}
+              rightColor={tokens.color.accent}
+              onPress={loading ? undefined : () => handleSelect(niveau)}
+            />
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
-  option: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 10,
-  },
-  optionSelected: {
-    borderColor: '#0066cc',
-    backgroundColor: '#e6f0ff',
-  },
-  optionText: { fontSize: 16, textAlign: 'center' },
-  optionTextSelected: { color: '#0066cc', fontWeight: '600' },
-});
