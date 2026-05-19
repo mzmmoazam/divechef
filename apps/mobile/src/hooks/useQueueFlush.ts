@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { getPendingCount, flushQueue } from '../services/queue';
 import { api } from '../services/api';
 import { useAuth } from './useAuth';
+import { useActiveDevice } from '../contexts/DeviceContext';
 
 async function uploadDive(payload: unknown): Promise<boolean> {
   try {
@@ -13,12 +14,13 @@ async function uploadDive(payload: unknown): Promise<boolean> {
   }
 }
 
-export function useQueueFlush(deviceSerial: string | null) {
+export function useQueueFlush() {
   const [pendingCount, setPendingCount] = useState(0);
   const appStateRef = useRef(AppState.currentState);
   const isFlushing = useRef(false);
   const { user } = useAuth();
   const userId = user?.id;
+  const { selectedDeviceSerial: deviceSerial } = useActiveDevice();
 
   const refreshCount = useCallback(async () => {
     // No device selected (P1 not wired yet, or user logged out): show zero

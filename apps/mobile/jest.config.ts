@@ -8,6 +8,7 @@ const config: Config = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@divechef/shared$': '<rootDir>/../../packages/shared/src/index.ts',
     '^@divechef/shared/(.*)$': '<rootDir>/../../packages/shared/dist/$1',
   },
   testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/'],

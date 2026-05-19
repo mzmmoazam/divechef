@@ -52,6 +52,12 @@ jest.mock('../hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// Mock DeviceContext
+jest.mock('../contexts/DeviceContext', () => ({
+  useActiveDevice: jest.fn(),
+}));
+const mockUseActiveDevice = require('../contexts/DeviceContext').useActiveDevice as jest.Mock;
+
 // Mock queue
 const mockEnqueueUpload = jest.fn().mockResolvedValue(undefined);
 jest.mock('../services/queue', () => ({
@@ -87,9 +93,22 @@ const fireDiscovered = () =>
     h({ identifier: 'mock-uuid', name: 'Peregrine', rssi: -50 })
   );
 
+const TEST_SERIAL = 'test-serial';
+
+const defaultDeviceCtx = {
+  selectedDeviceSerial: TEST_SERIAL,
+  devices: [],
+  setActive: jest.fn(),
+  setDevices: jest.fn(),
+  addDevice: jest.fn(),
+  updateDevice: jest.fn(),
+  removeDevice: jest.fn(),
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
+  mockUseActiveDevice.mockReturnValue(defaultDeviceCtx);
   mockDiscoveredHandlers = [];
   mockProgressHandlers = [];
   mockDisconnectedHandlers = [];
@@ -100,14 +119,9 @@ beforeEach(() => {
   (DiveComputerNative.downloadDive as jest.Mock).mockResolvedValue({ rawBytes: 'base64' });
 });
 
-const TEST_SERIAL = 'test-serial';
-
 describe('useSync', () => {
   it('downloads all dives when local fingerprint set is empty', async () => {
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       // Let scan promise register, then fire discovery
@@ -129,9 +143,6 @@ describe('useSync', () => {
     // hook (useSync.ts) protects against a leaked BLE connection.
     mockGetSyncedFingerprints.mockRejectedValue(new Error('db read failed'));
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -145,9 +156,6 @@ describe('useSync', () => {
   it('skips already-synced dives', async () => {
     mockGetSyncedFingerprints.mockResolvedValue(new Set(['aaaaaaaa', 'cccccccc']));
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -166,9 +174,6 @@ describe('useSync', () => {
       new Set(['aaaaaaaa', 'bbbbbbbb', 'cccccccc'])
     );
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -183,9 +188,6 @@ describe('useSync', () => {
   it('does NOT mark fingerprint synced when upload is queued (api fails)', async () => {
     mockApiPost.mockRejectedValue(new Error('network'));
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -206,9 +208,6 @@ describe('useSync', () => {
       new Promise<{ rawBytes: string }>((r) => { resolveDownload = r; })
     );
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -231,9 +230,6 @@ describe('useSync', () => {
     // is ever registered — fireDiscovered() is intentionally not called.
     mockUseAuth.mockReturnValue({ user: null });
     const { result } = renderHook(() => useSync(), { wrapper });
-    act(() => {
-      result.current.setSelectedDeviceSerial(TEST_SERIAL);
-    });
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));
@@ -246,8 +242,8 @@ describe('useSync', () => {
     // Device guard short-circuits before startScan — same defensive pattern
     // as the unauthenticated guard. The error code falls through to
     // t('common.error') in SyncScreen's i18n map.
+    mockUseActiveDevice.mockReturnValue({ ...defaultDeviceCtx, selectedDeviceSerial: null });
     const { result } = renderHook(() => useSync(), { wrapper });
-    // Intentionally do NOT call setSelectedDeviceSerial.
     await act(async () => {
       result.current.startSync();
       await new Promise((r) => setTimeout(r, 0));

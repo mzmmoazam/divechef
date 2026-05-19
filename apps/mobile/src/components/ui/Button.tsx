@@ -10,12 +10,14 @@ export function Button({
   variant = 'filled',
   disabled = false,
   style,
+  testID,
 }: {
   label: string;
   onPress: () => void;
   variant?: Variant;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }) {
   const bg =
     variant === 'filled' ? tokens.color.accent :
@@ -29,6 +31,7 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       style={({ pressed }) => [
         {
           backgroundColor: bg,
