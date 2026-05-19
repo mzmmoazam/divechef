@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CartesianChart, Line } from 'victory-native';
+import { tokens } from '../theme';
 
 interface ScoreTrendChartProps {
   data: { date: string; score: number }[];
@@ -23,6 +24,8 @@ export function ScoreTrendChart({ data }: ScoreTrendChartProps) {
         return '';
       },
       formatYLabel: (v: number | string) => `${Math.round(Number(v))}`,
+      labelColor: tokens.color.text2,
+      lineColor: tokens.color.borderSubtle,
     }),
     [data]
   );
@@ -39,7 +42,7 @@ export function ScoreTrendChart({ data }: ScoreTrendChartProps) {
         {({ points }) => (
           <Line
             points={points.score}
-            color="#0066cc"
+            color={tokens.color.accent}
             strokeWidth={2}
             curveType="monotoneX"
           />
