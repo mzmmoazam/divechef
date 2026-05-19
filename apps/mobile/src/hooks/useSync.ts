@@ -7,6 +7,7 @@ import { api } from '../services/api';
 import { enqueueUpload } from '../services/queue';
 import { getSyncedFingerprints, markFingerprintSynced } from '../services/syncedDives';
 import { useAuth } from './useAuth';
+import { useActiveDevice } from '../contexts/DeviceContext';
 
 const SERVICE_UUID = 'FE25C237-0ECE-443C-B0AA-E02033E7029D';
 
@@ -28,11 +29,7 @@ export function useSync() {
   const [syncedCount, setSyncedCount] = useState(0);
   const [currentDiveIndex, setCurrentDiveIndex] = useState(0);
   const [totalDives, setTotalDives] = useState(0);
-  // Currently-selected device serial for the user's add-a-device flow.
-  // P1 wires this from the registered device once the multi-device flow
-  // ships; until then it stays null and startSync short-circuits with
-  // 'no_device_selected'. Tests inject via setSelectedDeviceSerial.
-  const [selectedDeviceSerial, setSelectedDeviceSerial] = useState<string | null>(null);
+  const { selectedDeviceSerial } = useActiveDevice();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const abortRef = useRef(false);
@@ -220,7 +217,6 @@ export function useSync() {
     currentDiveIndex,
     totalDives,
     selectedDeviceSerial,
-    setSelectedDeviceSerial,
     startSync,
     cancel,
   };
