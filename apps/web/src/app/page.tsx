@@ -1,65 +1,113 @@
-import Image from "next/image";
+import Link from 'next/link';
+import { WaitlistForm } from '@/components/WaitlistForm';
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+    <main className="min-h-screen">
+      {/* Top nav */}
+      <nav className="sticky top-0 z-10 bg-base/80 backdrop-blur border-b border-border-subtle">
+        <div className="max-w-prose mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="font-semibold text-text no-underline">
+            DiveChef
+          </Link>
+          <a href="#beta" className="text-accent text-sm">
+            Beta access ▸
           </a>
         </div>
-      </main>
-    </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="max-w-prose mx-auto px-4 pt-12 pb-8">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-text leading-tight">
+          Personal dive intelligence
+          <br />
+          for Shearwater divers.
+        </h1>
+        <p className="mt-6 text-lg text-text-muted">
+          Sync your Peregrine, Perdix, or Petrel and see what every dive taught you.
+          Honest about what&apos;s verified, what&apos;s experimental, and what we
+          can&apos;t do yet.
+        </p>
+        <a
+          href="#beta"
+          className="inline-block mt-8 rounded-pill bg-accent px-6 py-3 font-semibold text-base no-underline"
+        >
+          Get a beta invite →
+        </a>
+        <p className="mt-4 text-sm text-text-dim">
+          Closed beta · iOS + Android · French / English
+        </p>
+      </section>
+
+      {/* How it works */}
+      <section className="max-w-prose mx-auto px-4 py-12 border-t border-border-subtle">
+        <h2 className="text-2xl font-semibold text-text mb-6">How it works</h2>
+        <ol className="space-y-4">
+          {[
+            ['1', 'Pair your dive computer over Bluetooth.'],
+            ['2', 'DiveChef pulls every new dive on the watch — no PC, no cable.'],
+            ['3', 'Each dive gets a clarity score and the insights behind it.'],
+          ].map(([n, copy]) => (
+            <li key={n} className="flex gap-4">
+              <span className="text-accent font-mono font-bold text-xl shrink-0 w-8">{n}</span>
+              <span className="text-text-muted">{copy}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Verification tiers */}
+      <section className="max-w-prose mx-auto px-4 py-12 border-t border-border-subtle">
+        <h2 className="text-2xl font-semibold text-text mb-2">
+          Verified, Compatible, Experimental
+        </h2>
+        <p className="text-text-muted mb-6">
+          We tell you what we&apos;ve actually tested. Four-tier framework, same as the app.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-card bg-elev p-4 border border-border-subtle">
+            <p className="font-semibold text-success">✓ Verified</p>
+            <p className="text-text-muted text-sm mt-1">Peregrine — tested end-to-end on real hardware.</p>
+          </div>
+          <div className="rounded-card bg-elev p-4 border border-border-subtle">
+            <p className="font-semibold text-accent">◑ Compatible</p>
+            <p className="text-text-muted text-sm mt-1">
+              Perdix family, Petrel 2 / 3, Teric, Nerd 2, Tern — same protocol, not yet on our test bench.
+            </p>
+          </div>
+          <div className="rounded-card bg-elev p-4 border border-border-subtle">
+            <p className="font-semibold text-warning">◌ Experimental</p>
+            <p className="text-text-muted text-sm mt-1">
+              Other Shearwater models we haven&apos;t catalogued yet. We&apos;ll work through them with you.
+            </p>
+          </div>
+          <div className="rounded-card bg-elev p-4 border border-border-subtle">
+            <p className="font-semibold text-text-dim">— Out of scope</p>
+            <p className="text-text-muted text-sm mt-1">
+              Petrel 1 / Nerd 1 use older Bluetooth Classic — not supported. Subsurface reads them via USB.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Beta form */}
+      <section id="beta" className="max-w-prose mx-auto px-4 py-12 border-t border-border-subtle">
+        <h2 className="text-2xl font-semibold text-text mb-2">Beta invite</h2>
+        <p className="text-text-muted mb-6">
+          Closed beta. Drop your email; we&apos;ll reply with a TestFlight or Play Console invite.
+        </p>
+        <WaitlistForm />
+      </section>
+
+      {/* Footer */}
+      <footer className="max-w-prose mx-auto px-4 py-8 border-t border-border-subtle text-sm text-text-dim">
+        <p>© {new Date().getFullYear()} DiveChef</p>
+        <p className="mt-2 space-x-4">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/support">Support</Link>
+        </p>
+      </footer>
+    </main>
   );
 }
