@@ -53,7 +53,9 @@
     "syncButton": "Sync",
     "score": "Score: {{score}}/100",
     "depth": "{{depth}} m",
-    "duration": "{{duration}} min"
+    "duration": "{{duration}} min",
+    "errorTitle": "Could not load dives",
+    "errorBody": "Check your connection and try again."
   },
   "detail": {
     "title": "Dive Detail",

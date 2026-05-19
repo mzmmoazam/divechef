@@ -9,6 +9,7 @@ import { DiveListItem } from '../components/DiveListItem';
 import { QueueBanner } from '../components/QueueBanner';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Spinner } from '../components/ui/Spinner';
 import { tokens } from '../theme';
 import { api } from '../services/api';
 import type { DiveSummary } from '@divechef/shared/types';
@@ -22,6 +23,7 @@ export default function AccueilScreen() {
   const {
     data,
     isLoading,
+    isError,
     isRefetching,
     refetch,
     fetchNextPage,
@@ -96,6 +98,28 @@ export default function AccueilScreen() {
     );
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.centeredContainer}>
+        <Spinner size="large" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centeredContainer}>
+        <EmptyState
+          icon="⚠️"
+          title={t('home.errorTitle')}
+          body={t('home.errorBody')}
+          ctaLabel={t('common.retry')}
+          onCtaPress={() => refetch()}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -129,6 +153,7 @@ export default function AccueilScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: tokens.color.bgBase },
   emptyContainer: { flexGrow: 1 },
+  centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tokens.color.bgBase },
   fab: {
     position: 'absolute',
     bottom: tokens.space[6],

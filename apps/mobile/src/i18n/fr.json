@@ -53,7 +53,9 @@
     "syncButton": "Synchroniser",
     "score": "Score : {{score}}/100",
     "depth": "{{depth}} m",
-    "duration": "{{duration}} min"
+    "duration": "{{duration}} min",
+    "errorTitle": "Impossible de charger les plongees",
+    "errorBody": "Verifiez votre connexion et reessayez."
   },
   "detail": {
     "title": "Detail de la plongee",
