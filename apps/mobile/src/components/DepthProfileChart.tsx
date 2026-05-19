@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { CartesianChart, Line } from 'victory-native';
 import { useDiveSamples } from '../hooks/useDives';
+import { tokens } from '../theme';
+import { Spinner } from './ui/Spinner';
 
 interface DepthProfileChartProps {
   diveId: string;
@@ -21,7 +23,7 @@ export function DepthProfileChart({ diveId }: DepthProfileChartProps) {
   if (isLoading || chartData.length === 0) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="small" color="#0066cc" />
+        <Spinner size="small" />
       </View>
     );
   }
@@ -35,12 +37,15 @@ export function DepthProfileChart({ diveId }: DepthProfileChartProps) {
         axisOptions={{
           formatXLabel: (v) => `${Math.round(Number(v))}`,
           formatYLabel: (v) => `${Math.abs(Number(v)).toFixed(0)}`,
+          labelColor: tokens.color.text2,
+          lineColor: tokens.color.borderSubtle,
+          tickCount: 5,
         }}
       >
         {({ points }) => (
           <Line
             points={points.depth}
-            color="#0066cc"
+            color={tokens.color.accent}
             strokeWidth={2}
             curveType="monotoneX"
           />

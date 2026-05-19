@@ -1,9 +1,14 @@
 import React from 'react';
-import { ScrollView, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDiveDetail } from '../hooks/useDives';
 import { DepthProfileChart } from '../components/DepthProfileChart';
 import { InsightCard } from '../components/InsightCard';
+import { Card } from '../components/ui/Card';
+import { ScoreNumber } from '../components/ui/ScoreNumber';
+import { Spinner } from '../components/ui/Spinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import { tokens } from '../theme';
 import type { RootStackProps } from '../navigation/types';
 
 function MetricRow({ label, value }: { label: string; value: string }) {
@@ -18,12 +23,26 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 export default function DiveDetailScreen({ route }: RootStackProps<'DiveDetail'>) {
   const { diveId } = route.params;
   const { t } = useTranslation();
-  const { data, isLoading } = useDiveDetail(diveId);
+  const { data, isLoading, isError, refetch } = useDiveDetail(diveId);
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
+        <Spinner size="large" />
+      </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <View style={styles.loadingContainer}>
+        <EmptyState
+          icon="⚠️"
+          title={t('detail.errorTitle')}
+          body={t('detail.errorBody')}
+          ctaLabel={t('common.retry')}
+          onCtaPress={() => refetch()}
+        />
       </View>
     );
   }
@@ -40,7 +59,14 @@ export default function DiveDetailScreen({ route }: RootStackProps<'DiveDetail'>
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.metricsSection}>
+      {dive.safetyScore != null && (
+        <Card hero style={{ marginBottom: tokens.space[4] }}>
+          <Text style={styles.scorecardLabel}>{t('detail.score')}</Text>
+          <ScoreNumber value={dive.safetyScore} size={tokens.type.display.size} />
+        </Card>
+      )}
+
+      <Card style={{ marginBottom: tokens.space[4] }}>
         <MetricRow label={t('detail.date')} value={date} />
         <MetricRow label={t('detail.duration')} value={`${durationMin} min`} />
         <MetricRow label={t('detail.maxDepth')} value={`${dive.maxDepthM.toFixed(1)} m`} />
@@ -48,15 +74,7 @@ export default function DiveDetailScreen({ route }: RootStackProps<'DiveDetail'>
         {dive.minWaterTempC != null && (
           <MetricRow label={t('detail.temp')} value={`${dive.minWaterTempC.toFixed(1)} °C`} />
         )}
-        <MetricRow
-          label={t('detail.score')}
-          value={
-            dive.safetyScore != null
-              ? t('detail.scoreValue', { score: dive.safetyScore })
-              : '—'
-          }
-        />
-      </View>
+      </Card>
 
       <Text style={styles.sectionTitle}>{t('detail.depthProfile')}</Text>
       <DepthProfileChart diveId={diveId} />
@@ -74,43 +92,57 @@ export default function DiveDetailScreen({ route }: RootStackProps<'DiveDetail'>
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
-  content: { padding: 16, paddingBottom: 32 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  metricsSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+  container: { flex: 1, backgroundColor: tokens.color.bgBase },
+  content: { padding: tokens.space[4], paddingBottom: tokens.space[8] },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tokens.color.bgBase },
+  scorecardLabel: {
+    fontSize: tokens.type.caption.size,
+    fontWeight: tokens.type.caption.weight,
+    letterSpacing: tokens.type.caption.letterSpacing,
+    color: tokens.color.text2,
+    textTransform: 'uppercase',
+    marginBottom: tokens.space[2],
   },
   metricRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: tokens.space[2],
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: tokens.color.borderSubtle,
   },
-  metricLabel: { fontSize: 14, color: '#666' },
-  metricValue: { fontSize: 14, fontWeight: '600', color: '#111' },
+  metricLabel: {
+    fontSize: tokens.type.caption.size,
+    fontWeight: tokens.type.caption.weight,
+    letterSpacing: tokens.type.caption.letterSpacing,
+    color: tokens.color.text2,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    fontSize: tokens.type.monoDigit.size,
+    fontWeight: tokens.type.monoDigit.weight,
+    fontVariant: ['tabular-nums'],
+    color: tokens.color.text,
+    letterSpacing: tokens.type.monoDigit.letterSpacing,
+  },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: tokens.type.heading.size,
+    fontWeight: tokens.type.heading.weight,
+    color: tokens.color.text,
+    marginTop: tokens.space[4],
+    marginBottom: tokens.space[2],
   },
-  noInsights: { fontSize: 14, color: '#666', fontStyle: 'italic', marginVertical: 8 },
+  noInsights: {
+    fontSize: tokens.type.body.size,
+    color: tokens.color.text2,
+    fontStyle: 'italic',
+    marginVertical: tokens.space[2],
+  },
   disclaimer: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: tokens.type.caption.size,
+    color: tokens.color.text3,
     textAlign: 'center',
-    marginTop: 24,
+    marginTop: tokens.space[6],
     lineHeight: 16,
   },
 });
