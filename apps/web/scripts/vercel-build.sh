@@ -4,9 +4,6 @@ set -euo pipefail
 echo "▸ Building shared package"
 pnpm --filter @divechef/shared build
 
-echo "▸ Generating Prisma client"
-pnpm --filter @divechef/web exec prisma generate
-
 if [ "${VERCEL_ENV:-}" = "production" ]; then
   echo "▸ VERCEL_ENV=production — applying database migrations"
   pnpm --filter @divechef/web db:deploy
