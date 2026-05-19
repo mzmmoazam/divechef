@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { DiveSummary } from '@divechef/shared/types';
+import { Card } from './ui/Card';
+import { ScoreNumber } from './ui/ScoreNumber';
+import { tokens } from '../theme';
 
 interface LastDiveCardProps {
   dive: DiveSummary;
@@ -22,42 +25,35 @@ export function LastDiveCard({ dive, onPress }: LastDiveCardProps) {
   const durationMin = Math.round(dive.durationSec / 60);
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Text style={styles.header}>{t('home.lastDive')}</Text>
-      <Text style={styles.date}>{formattedDate}</Text>
-      <View style={styles.stats}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>
-            {dive.maxDepthM.toFixed(1)}
-          </Text>
-          <Text style={styles.statLabel}>m</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{durationMin}</Text>
-          <Text style={styles.statLabel}>min</Text>
-        </View>
-        {dive.safetyScore != null && (
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{dive.safetyScore}</Text>
-            <Text style={styles.statLabel}>/100</Text>
+    <TouchableOpacity onPress={onPress} style={{ marginHorizontal: tokens.space[4], marginVertical: tokens.space[3] }}>
+      <Card hero>
+        <Text style={{ fontSize: tokens.type.small.size, color: tokens.color.text2, fontWeight: tokens.type.small.weight }}>
+          {t('home.lastDive')}
+        </Text>
+        <Text style={{ fontSize: tokens.type.heading.size, color: tokens.color.text, fontWeight: tokens.type.heading.weight, marginTop: tokens.space[1] }}>
+          {formattedDate}
+        </Text>
+        <View style={{ flexDirection: 'row', marginTop: tokens.space[4], gap: tokens.space[6], alignItems: 'baseline' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={{ fontSize: tokens.type.display.size, fontWeight: tokens.type.display.weight, color: tokens.color.accent, letterSpacing: tokens.type.display.letterSpacing }}>
+              {dive.maxDepthM.toFixed(1)}
+            </Text>
+            <Text style={{ fontSize: tokens.type.small.size, color: tokens.color.text2, marginLeft: 2 }}>m</Text>
           </View>
-        )}
-      </View>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={{ fontSize: tokens.type.display.size, fontWeight: tokens.type.display.weight, color: tokens.color.accent, letterSpacing: tokens.type.display.letterSpacing }}>
+              {durationMin}
+            </Text>
+            <Text style={{ fontSize: tokens.type.small.size, color: tokens.color.text2, marginLeft: 2 }}>min</Text>
+          </View>
+          {dive.safetyScore != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+              <ScoreNumber value={dive.safetyScore} size={tokens.type.display.size} />
+              <Text style={{ fontSize: tokens.type.small.size, color: tokens.color.text2 }}>/100</Text>
+            </View>
+          )}
+        </View>
+      </Card>
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#0066cc',
-    borderRadius: 12,
-    padding: 20,
-    margin: 16,
-  },
-  header: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
-  date: { fontSize: 16, color: '#fff', fontWeight: '600', marginTop: 4 },
-  stats: { flexDirection: 'row', marginTop: 16, gap: 24 },
-  stat: { flexDirection: 'row', alignItems: 'baseline' },
-  statValue: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
-  statLabel: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginLeft: 2 },
-});

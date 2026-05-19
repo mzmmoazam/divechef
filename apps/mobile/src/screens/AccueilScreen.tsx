@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,9 @@ import { useDiveList } from '../hooks/useDives';
 import { LastDiveCard } from '../components/LastDiveCard';
 import { DiveListItem } from '../components/DiveListItem';
 import { QueueBanner } from '../components/QueueBanner';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { tokens } from '../theme';
 import { api } from '../services/api';
 import type { DiveSummary } from '@divechef/shared/types';
 import type { RootStackParamList } from '../navigation/types';
@@ -72,14 +75,15 @@ export default function AccueilScreen() {
   const ListEmpty = useMemo(() => {
     if (isLoading) return null;
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>{t('home.noDives')}</Text>
-        <TouchableOpacity style={styles.syncButton} onPress={handleSync}>
-          <Text style={styles.syncButtonText}>{t('home.syncButton')}</Text>
-        </TouchableOpacity>
-      </View>
+      <EmptyState
+        icon="🌊"
+        title="No dives yet"
+        body="Sync your dive computer to see your last dive here."
+        ctaLabel="Sync now"
+        onCtaPress={handleSync}
+      />
     );
-  }, [isLoading, t, handleSync]);
+  }, [isLoading, handleSync]);
 
   const renderItem = ({ item, index }: { item: DiveSummary; index: number }) => {
     // Skip the first item if it's shown in the header card
@@ -111,39 +115,23 @@ export default function AccueilScreen() {
         contentContainerStyle={allDives.length === 0 ? styles.emptyContainer : undefined}
       />
       {allDives.length > 0 && (
-        <TouchableOpacity style={styles.fab} onPress={handleSync}>
-          <Text style={styles.fabText}>{t('home.syncButton')}</Text>
-        </TouchableOpacity>
+        <Button
+          label={t('home.syncButton')}
+          variant="filled"
+          onPress={handleSync}
+          style={styles.fab}
+        />
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
+  container: { flex: 1, backgroundColor: tokens.color.bgBase },
   emptyContainer: { flexGrow: 1 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  emptyText: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 16 },
-  syncButton: {
-    backgroundColor: '#0066cc',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  syncButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   fab: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    backgroundColor: '#0066cc',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    bottom: tokens.space[6],
+    right: tokens.space[6],
   },
-  fabText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });
