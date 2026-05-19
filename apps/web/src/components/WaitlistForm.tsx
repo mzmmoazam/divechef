@@ -41,7 +41,7 @@ export function WaitlistForm() {
 
   if (state.kind === 'success') {
     return (
-      <div className="rounded-card bg-elev p-6 text-text">
+      <div className="rounded-card bg-elev/80 backdrop-blur p-6 text-text border border-accent/20">
         <p className="font-semibold">Thanks — we&apos;ll be in touch.</p>
         <p className="text-text-muted mt-2 text-sm">
           We review the waitlist a few times a week and reply with a TestFlight or Play Console invite.
@@ -66,7 +66,7 @@ export function WaitlistForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full rounded-card bg-elev border border-border-subtle px-4 py-3 text-text placeholder:text-text-dim focus:border-accent focus:outline-none"
+          className="w-full rounded-card bg-elev/60 backdrop-blur border border-border-subtle px-4 py-3 text-text placeholder:text-text-dim focus:border-accent focus:outline-none focus:shadow-[0_0_24px_#22d3ee33] transition-shadow"
         />
       </div>
       <div>
@@ -80,7 +80,7 @@ export function WaitlistForm() {
           rows={3}
           maxLength={500}
           placeholder="e.g. Shearwater Peregrine, recently"
-          className="w-full rounded-card bg-elev border border-border-subtle px-4 py-3 text-text placeholder:text-text-dim focus:border-accent focus:outline-none"
+          className="w-full rounded-card bg-elev/60 backdrop-blur border border-border-subtle px-4 py-3 text-text placeholder:text-text-dim focus:border-accent focus:outline-none focus:shadow-[0_0_24px_#22d3ee33] transition-shadow"
         />
       </div>
       {state.kind === 'error' && (
@@ -89,7 +89,12 @@ export function WaitlistForm() {
       <button
         type="submit"
         disabled={state.kind === 'submitting'}
-        className="rounded-pill bg-accent px-6 py-3 font-semibold text-base disabled:opacity-50"
+        className="rounded-pill px-7 py-[14px] font-bold text-[14px] text-base disabled:opacity-50 transition-all"
+        style={{
+          background: 'linear-gradient(135deg, #22d3ee 0%, #a5f3fc 100%)',
+          color: '#0a1220',
+          boxShadow: state.kind === 'submitting' ? 'none' : '0 0 24px #22d3ee44',
+        }}
       >
         {state.kind === 'submitting' ? 'Sending…' : 'Request invite'}
       </button>
