@@ -104,3 +104,12 @@ model Insight {
 
   @@index([diveId])
 }
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
