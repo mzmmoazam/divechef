@@ -12,16 +12,16 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: 'DiveChef — Personal dive intelligence for Shearwater divers',
+    default: 'DiveChef — Personal dive intelligence',
     template: '%s · DiveChef',
   },
   description:
-    'Sync your Shearwater dive computer and see what every dive taught you. Honest verification tiers; closed beta on iOS + Android.',
+    'Sync your dive computer and see what every dive taught you. Starts with Shearwater; more vendors coming. Honest verification tiers; closed beta on iOS + Android.',
   metadataBase: new URL('https://www.divechef.com'),
   openGraph: {
     title: 'DiveChef — Personal dive intelligence',
     description:
-      'Sync your Shearwater dive computer and see what every dive taught you. Closed beta.',
+      'Sync your dive computer and see what every dive taught you. Starts with Shearwater; more vendors coming. Closed beta.',
     url: 'https://www.divechef.com',
     siteName: 'DiveChef',
     images: [{ url: '/og.png', width: 1200, height: 630 }],
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'DiveChef — Personal dive intelligence',
     description:
-      'Sync your Shearwater dive computer and see what every dive taught you.',
+      'Sync your dive computer and see what every dive taught you. Starts with Shearwater; more vendors coming.',
     images: ['/og.png'],
   },
   robots: { index: true, follow: true },

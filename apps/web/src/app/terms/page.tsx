@@ -37,10 +37,11 @@ export default function TermsPage() {
           explicit about what we&apos;ve tested:
         </p>
         <ul className="list-disc pl-6 space-y-2 text-text-muted">
-          <li><strong className="text-success">Verified:</strong> tested end-to-end on real hardware. Currently: Peregrine.</li>
-          <li><strong className="text-accent">Compatible:</strong> uses the same protocol family, expected to work but not bench-tested. Currently: Perdix family, Petrel 2 / 3, Teric, Nerd 2, Tern.</li>
+          <li><strong className="text-success">Verified:</strong> tested end-to-end on real hardware. Currently: Shearwater Peregrine.</li>
+          <li><strong className="text-accent">Compatible:</strong> uses the same protocol family, expected to work but not bench-tested. Currently: Shearwater Perdix family, Petrel 2 / 3, Teric, Nerd 2, Tern.</li>
           <li><strong className="text-warning">Experimental:</strong> other Shearwater models we haven&apos;t catalogued yet.</li>
-          <li><strong className="text-text-dim">Out of scope:</strong> Petrel 1 / Nerd 1 (older Bluetooth Classic — not supported).</li>
+          <li><strong className="text-text-dim">Out of scope:</strong> Shearwater Petrel 1 / Nerd 1 (older Bluetooth Classic — not supported).</li>
+          <li><strong className="text-accent-soft">Coming next:</strong> Garmin Descent, Suunto, Mares, Atomic Aquatics — different protocols on the roadmap. Not supported yet; we&apos;ll announce when each one ships.</li>
         </ul>
         <p className="text-text-muted mt-3">
           When you sync from a Compatible or Experimental device, we&apos;ll ask you

@@ -65,12 +65,11 @@ export default function HomePage() {
             <Eyebrow withDot className="mb-6">Closed beta · iOS &amp; Android</Eyebrow>
             <h1 className="text-[44px] md:text-[64px] leading-[0.98] tracking-[-0.035em] font-medium mb-6 text-text">
               Personal dive<br />
-              <span className="serif-italic">intelligence</span><br />
-              for Shearwater divers.
+              <span className="serif-italic">intelligence</span>.
             </h1>
             <p className="text-lg text-text-muted mb-8 max-w-[460px]">
-              Sync your Peregrine, Perdix, or Petrel and see what every dive taught you.{' '}
-              <strong className="text-text font-medium">Honest about what&apos;s verified</strong>,
+              Starts with Shearwater. More dive computers coming. See what every dive taught you{' '}
+              — <strong className="text-text font-medium">honest about what&apos;s verified</strong>,
               what&apos;s experimental, and what we can&apos;t do yet.
             </p>
             <div className="flex items-center gap-5 flex-wrap">
@@ -115,15 +114,24 @@ export default function HomePage() {
       {/* === Verification tiers === */}
       <section className="max-w-[1100px] mx-auto px-6 py-16 border-t border-border-subtle">
         <Eyebrow className="mb-3">Honesty</Eyebrow>
-        <h2 className="text-3xl font-semibold text-text mb-3">Verified, Compatible, Experimental</h2>
+        <h2 className="text-3xl font-semibold text-text mb-3">Verified, Compatible, Experimental — and what&apos;s next</h2>
         <p className="text-text-muted mb-8 max-w-prose">
-          We tell you what we&apos;ve actually tested. Four-tier framework, same as the app.
+          We tell you what we&apos;ve actually tested today, and what&apos;s on the roadmap.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
-          <Tier color="text-success" mark="✓" label="Verified" body="Peregrine — tested end-to-end on real hardware." />
-          <Tier color="text-accent" mark="◑" label="Compatible" body="Perdix family, Petrel 2 / 3, Teric, Nerd 2, Tern — same protocol, not yet on our test bench." />
+          <Tier color="text-success" mark="✓" label="Verified" body="Shearwater Peregrine — tested end-to-end on real hardware." />
+          <Tier color="text-accent" mark="◑" label="Compatible" body="Shearwater Perdix family, Petrel 2 / 3, Teric, Nerd 2, Tern — same protocol, not yet on our test bench." />
           <Tier color="text-warning" mark="◌" label="Experimental" body="Other Shearwater models we haven't catalogued yet. We'll work through them with you." />
-          <Tier color="text-text-dim" mark="—" label="Out of scope" body="Petrel 1 / Nerd 1 use older Bluetooth Classic — not supported. Subsurface reads them via USB." />
+          <Tier color="text-text-dim" mark="—" label="Out of scope" body="Shearwater Petrel 1 / Nerd 1 use older Bluetooth Classic — not supported. Subsurface reads them via USB." />
+          <div className="rounded-card bg-elev/60 backdrop-blur p-5 border border-border-subtle md:col-span-2">
+            <p className="font-semibold text-accent-soft flex items-center gap-2">
+              <span aria-hidden>→</span>
+              Coming next
+            </p>
+            <p className="text-text-muted text-sm mt-2">
+              Garmin Descent, Suunto, Mares, Atomic Aquatics — different protocols, different timelines. On the roadmap. Tell us which one to do first.
+            </p>
+          </div>
         </div>
       </section>
 
