@@ -9,3 +9,4 @@ export type {
   ShearwaterModel,
   ShearwaterVerificationTier,
 } from "./shearwaterModel.js";
+export { scrubSensitiveData } from './sentry-scrub';

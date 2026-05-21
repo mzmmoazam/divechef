@@ -1,4 +1,4 @@
-import type { ErrorEvent, EventHint } from '@sentry/nextjs';
+import type { ErrorEvent, EventHint } from '@sentry/core';
 
 const SENSITIVE_KEYS = new Set([
   'password',
@@ -23,8 +23,8 @@ function scrubObject(obj: unknown): unknown {
  * Strip IP addresses and sensitive request-body keys before Sentry sends an event.
  * Returns a new object — does not mutate the input.
  *
- * Used by all three runtimes (server, client, edge). Single source of truth for
- * what we consider sensitive.
+ * Used by all Sentry runtimes (web server, web client, web edge, mobile).
+ * Single source of truth for what we consider sensitive.
  */
 export function scrubSensitiveData<T extends ErrorEvent>(event: T, _hint?: EventHint): T {
   const next: T = { ...event };
