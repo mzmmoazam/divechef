@@ -1,3 +1,5 @@
+import * as React from 'react';
+
 // Skip @testing-library/react-native's strict peer-dep check.
 // Workspace resolution can hoist a newer react-test-renderer (19.2.x) than the
 // library's hard-coded expectation (matching react@19.1.0). The runtime is
@@ -38,4 +40,16 @@ jest.mock('react-native-svg', () => ({
   G: 'G',
   Text: 'Text',
   Line: 'Line',
+}));
+
+// Sentry: mock the native SDK in tests so init/capture calls are no-ops.
+// Real init runs only on device via EAS-built binaries.
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  wrap: <T extends React.ComponentType<unknown>>(component: T): T => component,
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
+  setUser: jest.fn(),
+  setTag: jest.fn(),
 }));

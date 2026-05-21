@@ -1,3 +1,5 @@
+import './src/sentry/init';
+import * as Sentry from '@sentry/react-native';
 import React from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './src/services/queryClient';
@@ -6,7 +8,7 @@ import { DeviceProvider } from './src/contexts/DeviceContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import './src/i18n';
 
-export default function App() {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -17,3 +19,5 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
+export default Sentry.wrap(App);

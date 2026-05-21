@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
-import { scrubSensitiveData } from "./src/lib/sentry-scrub";
+import { scrubSensitiveData } from "@divechef/shared";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,

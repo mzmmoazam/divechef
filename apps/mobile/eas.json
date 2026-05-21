@@ -1,34 +1,36 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
       "distribution": "internal",
-      "ios": {
-        "buildConfiguration": "Release"
-      },
-      "android": {
-        "buildType": "apk"
-      },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://divechef-preview.vercel.app"
+        "EXPO_PUBLIC_API_URL": "http://localhost:3000",
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "development"
       }
     },
     "production": {
-      "distribution": "internal",
+      "autoIncrement": true,
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "distribution": "internal"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://divechef.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://www.divechef.com",
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal"
       }
     }
   }
