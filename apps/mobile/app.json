@@ -3,9 +3,12 @@
     "name": "DiveChef",
     "slug": "divechef",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -35,6 +38,16 @@
       "eas": {
         "projectId": "8902a5dc-359a-47e3-ae4b-1377d6397757"
       }
-    }
+    },
+    "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "divechef",
+          "project": "javascript-nextjs"
+        }
+      ]
+    ]
   }
 }
