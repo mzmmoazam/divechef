@@ -18,6 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.divechef.app",
+      "deploymentTarget": "17.2",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "DiveChef needs Bluetooth to communicate with your dive computer."
       }
