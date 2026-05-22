@@ -26,6 +26,8 @@
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BBAD8B7F391D4419A7290585 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8C4EBE5B5E85ABE41C4F9584 /* PrivacyInfo.xcprivacy */; };
 		C3A2E75A72CA8AFEAC3827EB /* libPods-DiveChef-DiveChefTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 715F27566629CF406CBA3EAE /* libPods-DiveChef-DiveChefTests.a */; };
+		CA3E7A01DEAD0001CAFE0001 /* DiveChefCameraEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3E7A02DEAD0002CAFE0002 /* DiveChefCameraEvents.swift */; };
+		CA3E7A03DEAD0003CAFE0003 /* DiveChefCameraEvents.m in Sources */ = {isa = PBXBuildFile; fileRef = CA3E7A04DEAD0004CAFE0004 /* DiveChefCameraEvents.m */; };
 		CF03A9FD35AEEFE9C5AA25DA /* DecompressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D279A2138AA48A402B9E3E /* DecompressTests.swift */; };
 		E2584400238CFC71975C7E0F /* PeregrineProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694CA61EED910C71C8D915CF /* PeregrineProtocol.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
@@ -73,6 +75,8 @@
 		B6D6311CDB6A375733744D9D /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DiveChef/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C09A1272801B5FD2565ADB1C /* Pods-DiveChef.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DiveChef.release.xcconfig"; path = "Target Support Files/Pods-DiveChef/Pods-DiveChef.release.xcconfig"; sourceTree = "<group>"; };
+		CA3E7A02DEAD0002CAFE0002 /* DiveChefCameraEvents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiveChefCameraEvents.swift; sourceTree = "<group>"; };
+		CA3E7A04DEAD0004CAFE0004 /* DiveChefCameraEvents.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = DiveChefCameraEvents.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DiveChef/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* DiveChef-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DiveChef-Bridging-Header.h"; path = "DiveChef/DiveChef-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -178,6 +182,7 @@
 				D4D56BF6190AD1C45C8E9445 /* Pods */,
 				9DBD47A65FAD7EFD58FB0F03 /* ExpoModulesProviders */,
 				A5A9B445165D2DD4FF46F3C2 /* DiveComputer */,
+				CA3E7A05DEAD0005CAFE0005 /* DiveChefCameraEvents */,
 				41B1936061D5312BAA068AF0 /* DiveChefTests */,
 			);
 			indentWidth = 2;
@@ -222,6 +227,16 @@
 			);
 			name = Supporting;
 			path = DiveChef/Supporting;
+			sourceTree = "<group>";
+		};
+		CA3E7A05DEAD0005CAFE0005 /* DiveChefCameraEvents */ = {
+			isa = PBXGroup;
+			children = (
+				CA3E7A02DEAD0002CAFE0002 /* DiveChefCameraEvents.swift */,
+				CA3E7A04DEAD0004CAFE0004 /* DiveChefCameraEvents.m */,
+			);
+			name = DiveChefCameraEvents;
+			path = DiveChefCameraEvents;
 			sourceTree = "<group>";
 		};
 		CAFEAB3F1C87B33483B1CDE6 /* DiveChefTests */ = {
@@ -466,6 +481,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/Sentry/Sentry.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -476,6 +492,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Sentry.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -518,6 +535,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/Sentry/Sentry.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -528,6 +546,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Sentry.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -587,6 +606,8 @@
 				ABE7B12894FA48305526E2C9 /* DiveComputerModule.swift in Sources */,
 				5F164B360004905967C714ED /* ShearwaterPetrelManager.swift in Sources */,
 				E2584400238CFC71975C7E0F /* PeregrineProtocol.swift in Sources */,
+				CA3E7A01DEAD0001CAFE0001 /* DiveChefCameraEvents.swift in Sources */,
+				CA3E7A03DEAD0003CAFE0003 /* DiveChefCameraEvents.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -609,7 +630,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				INFOPLIST_FILE = DiveChefTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.divechef.DiveChefTests;
 				PRODUCT_NAME = DiveChefTests;
@@ -635,7 +656,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = DiveChef/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -667,7 +688,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Z3GQRMFRU8;
 				INFOPLIST_FILE = DiveChef/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -695,7 +716,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				INFOPLIST_FILE = DiveChefTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.divechef.DiveChefTests;
 				PRODUCT_NAME = DiveChefTests;
@@ -752,7 +773,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -808,7 +829,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
